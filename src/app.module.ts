@@ -21,6 +21,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 // import { WithdrawalTransaction } from './transactions/withdraw/entities/withdrawal-transaction.entity';
 // import { WithdrawalFee } from './transactions/withdraw/entities/withdrawal-fee.entity';
 import { CommonModule } from './common/common.module';
+import { MenuModule } from './menu/menu.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { CommonModule } from './common/common.module';
     RoleModule,
     TransactionsModule,
     CommonModule,
+    MenuModule,
   ],
   controllers: [AlphapoController],
   providers: [AlphapoService, HmacUtil],
