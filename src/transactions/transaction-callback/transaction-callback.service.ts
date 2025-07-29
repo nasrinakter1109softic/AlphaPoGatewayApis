@@ -189,7 +189,7 @@ export class TransactionCallbackService {
     filters?: Record<string, string>; // e.g. { provider: 'alphapo', status: 'received' }
     dateFrom?: string | Date;
     dateTo?: string | Date;
-    orderBy?: Record<string, 'ASC' | 'DESC'>; // e.g. { createdAt: 'DESC' }
+    orderBy?: string; // e.g. { createdAt: 'DESC' }
     // sort?: string; // e.g. 'createdAt'
   }) {
     const callbackResult = await this.genericQueryService.query<CallbackLog>(

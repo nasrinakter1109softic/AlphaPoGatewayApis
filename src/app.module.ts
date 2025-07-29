@@ -21,6 +21,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 // import { WithdrawalTransaction } from './transactions/withdraw/entities/withdrawal-transaction.entity';
 // import { WithdrawalFee } from './transactions/withdraw/entities/withdrawal-fee.entity';
 import { CommonModule } from './common/common.module';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { CommonModule } from './common/common.module';
     CommonModule,
   ],
   controllers: [AlphapoController],
-  providers: [AlphapoService, HmacUtil],
+  providers: [AlphapoService, HmacUtil, ResponseInterceptor],
+  exports: [AlphapoService, HmacUtil, ResponseInterceptor],
 })
 export class AppModule {}

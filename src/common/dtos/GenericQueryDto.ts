@@ -1,0 +1,37 @@
+import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsObject } from 'class-validator';
+
+export class GenericQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  orderBy?: string;
+
+  @IsOptional()
+  @IsString()
+  orderDir?: 'ASC' | 'DESC';
+
+  @IsOptional()
+  @Type(() => Date)
+  dateFrom?: Date;
+
+  @IsOptional()
+  @Type(() => Date)
+  dateTo?: Date;
+
+  // any other filters (dynamic)
+  @IsOptional()
+  @IsObject()
+  filters?: Record<string, string>;
+}
