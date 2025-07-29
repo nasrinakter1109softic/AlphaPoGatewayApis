@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { HmacUtil } from './utils/hmac.util';
+import { HmacUtil } from './common/utils/hmac.util';
 import { AxiosRequestConfig } from 'axios';
 import { ConfigService } from '@nestjs/config';
 
