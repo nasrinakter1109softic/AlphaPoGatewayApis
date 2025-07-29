@@ -22,6 +22,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 // import { WithdrawalFee } from './transactions/withdraw/entities/withdrawal-fee.entity';
 import { CommonModule } from './common/common.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { MenuModule } from './menu/menu.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     RoleModule,
     TransactionsModule,
     CommonModule,
+    MenuModule,
   ],
   controllers: [AlphapoController],
   providers: [AlphapoService, HmacUtil, ResponseInterceptor],
