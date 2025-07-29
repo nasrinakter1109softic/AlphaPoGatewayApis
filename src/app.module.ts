@@ -23,6 +23,8 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { CommonModule } from './common/common.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { MenuModule } from './menu/menu.module';
+import { ResponseHelper } from './common/helpers/response.helper';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -53,7 +55,13 @@ import { MenuModule } from './menu/menu.module';
     MenuModule,
   ],
   controllers: [AlphapoController],
-  providers: [AlphapoService, HmacUtil, ResponseInterceptor],
+  providers: [
+    AlphapoService,
+    HmacUtil,
+    ResponseInterceptor,
+    ResponseHelper,
+    AllExceptionsFilter,
+  ],
   exports: [AlphapoService, HmacUtil, ResponseInterceptor],
 })
 export class AppModule {}

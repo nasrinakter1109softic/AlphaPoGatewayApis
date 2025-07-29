@@ -1,7 +1,6 @@
 import { IsString, IsOptional } from 'class-validator';
 
 export class CreateMenuDto {
-
   @IsString()
   title: string;
 
