@@ -6,6 +6,8 @@ import {
   Param,
   Post,
   Put,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { MenuService } from './menu.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
@@ -17,9 +19,12 @@ export class MenuController {
 
   @Post('create')
   async createMenu(@Body() body: CreateMenuDto) {
+    if (!body.title) {
+      throw new BadRequestException('Title is required');
+    }
     const existing = await this.menuService.findByTitle(body.title);
     if (existing) {
-      return { message: 'Already created' };
+      throw new BadRequestException('Menu with this title already exists');
     }
     return this.menuService.createMenu(body);
   }
@@ -31,16 +36,29 @@ export class MenuController {
 
   @Get(':id')
   async getMenuById(@Param('id') id: number) {
-    return this.menuService.getMenuById(id);
+    const menu = await this.menuService.getMenuById(id);
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+    return menu;
   }
 
   @Put(':id')
   async updateMenu(@Param('id') id: number, @Body() body: UpdateMenuDto) {
+    const menu = await this.menuService.getMenuById(id);
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
     return this.menuService.updateMenu(id, body);
   }
 
   @Delete(':id')
   async deleteMenu(@Param('id') id: number) {
-    return this.menuService.deleteMenu(id);
+    const menu = await this.menuService.getMenuById(id);
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+    await this.menuService.deleteMenu(id);
+    return { message: 'Menu deleted successfully' };
   }
 }
