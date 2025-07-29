@@ -18,7 +18,7 @@ export class DepositFee {
   id: number;
 
   // eslint-disable-next-line prettier/prettier
-  @ManyToOne(() => Deposit, d => d.fees, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Deposit, (d) => d.fees, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'deposit_id' })
   deposit: Deposit;
 
