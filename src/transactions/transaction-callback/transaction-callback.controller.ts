@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { TransactionCallbackService } from './transaction-callback.service';
 import { HmacUtil } from '../../common/utils/hmac.util';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 
 @Controller('callback')
 export class TransactionCallbackController {
@@ -49,16 +50,16 @@ export class TransactionCallbackController {
   }
 
   @Get()
-  async queryCallbackLogs(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('search') search?: string,
-    @Query() filters?: Record<string, any>,
-    @Query('dateFrom') dateFrom?: string | Date,
-    @Query('dateTo') dateTo?: string | Date,
-    // @Query('sort') sort?: string,
-    @Query('orderBy') orderBy?: Record<string, 'ASC' | 'DESC'>,
-  ) {
+  async queryCallbackLogs(@Query() query: GenericQueryDto) {
+    const {
+      page,
+      limit,
+      search,
+      orderBy,
+      dateFrom,
+      dateTo,
+      filters = {},
+    } = query;
     return this.callbackService.callbacklogs({
       page,
       limit,

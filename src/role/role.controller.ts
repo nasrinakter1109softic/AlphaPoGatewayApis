@@ -6,10 +6,12 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 
 @Controller('role')
 export class RoleController {
@@ -19,8 +21,27 @@ export class RoleController {
     return this.roleService.createRole(body);
   }
   @Get()
-  async getRoles() {
-    return this.roleService.getAllRoles();
+  async getRoles(@Query() query: GenericQueryDto) {
+    const {
+      page,
+      limit,
+      search,
+      orderBy,
+      orderDir,
+      dateFrom,
+      dateTo,
+      filters = {},
+    } = query;
+    return this.roleService.getAllRoles({
+      page,
+      limit,
+      search,
+      filters,
+      dateFrom,
+      dateTo,
+      orderBy,
+      orderDir,
+    });
   }
   @Get(':id')
   async getRoleById(@Param('id') id: number) {
