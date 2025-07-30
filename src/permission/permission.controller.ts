@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
@@ -11,9 +21,9 @@ export class PermissionController {
   @Post('create')
   create(@Body() body: CreatePermissionDto) {
     console.log('Creating permission with body:', body);
-        if (!body.title || !body.slug) { 
-          throw new BadRequestException('Title and Slug is required');
-        }
+    if (!body.title || !body.slug) {
+      throw new BadRequestException('Title and Slug is required');
+    }
     return this.permissionService.create(body);
   }
 

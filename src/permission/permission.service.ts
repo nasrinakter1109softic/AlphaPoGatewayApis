@@ -35,15 +35,10 @@ export class PermissionService {
   }
 
   async findAll(options: GenericQueryOptions) {
-    return this.genericQuery.query(
-      this.permissionRepo,
-      'permission',
-      options,
-      {
-        allowedFilterColumns: ['title', 'slug'],
-        searchableColumns: ['title', 'slug']
-      },
-    );
+    return this.genericQuery.query(this.permissionRepo, 'permission', options, {
+      allowedFilterColumns: ['title', 'slug'],
+      searchableColumns: ['title', 'slug'],
+    });
   }
 
   async findOne(id: number) {
@@ -58,18 +53,18 @@ export class PermissionService {
   }
 
   async update(id: number, dto: UpdatePermissionDto) {
-     await this.findOne(id);
+    await this.findOne(id);
     await this.permissionRepo.update(id, dto);
-    return this.findOne(id); 
+    return this.findOne(id);
   }
 
   async remove(id: number) {
     const permission = await this.findOne(id);
-   if (permission.roles && permission.roles.length > 0) {
-        throw new ConflictException(
-            'Cannot delete permission that is assigned to roles.',
-        );
-   }
+    if (permission.roles && permission.roles.length > 0) {
+      throw new ConflictException(
+        'Cannot delete permission that is assigned to roles.',
+      );
+    }
     await this.permissionRepo.remove(permission);
     return { success: true };
   }
