@@ -2,13 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  // OneToMany,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-// import { Users } from './users.entity';
-// import { Permission } from './permission.entity';
-// import { Menu } from './menu.entity';
+import { Menu } from 'src/menu/entity/menu.entity';
+import { Permission } from 'src/permission/entity/permission.entity';
+import { User } from 'src/user/entity/user.entity';
 
 @Entity('roles')
 export class Roles {
@@ -30,12 +32,14 @@ export class Roles {
   @UpdateDateColumn({ type: 'timestamptz', precision: 6 })
   updatedAt: Date;
 
-  // @OneToMany(() => Users, (user) => user.role)
-  // users: Users[];
+  @OneToMany(() => User, (user) => user.role)
+  users: User[];
 
-  // @OneToMany(() => Permission, (permission) => permission.role)
-  // permissions: Permission[];
+  @ManyToMany(() => Permission, (permission) => permission.roles)
+  @JoinTable()
+  permissions: Permission[];
 
-  // @OneToMany(() => Menu, (menu) => menu.role)
-  // Menus: Menu[];
+  @ManyToMany(() => Menu, (menu) => menu.roles)
+  @JoinTable()
+  menus: Menu[];
 }
