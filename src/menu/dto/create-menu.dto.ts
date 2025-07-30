@@ -1,7 +1,7 @@
 import { IsString, IsOptional } from 'class-validator';
 
 export class CreateMenuDto {
-  @IsString({message: 'Title must be Required'})
+  @IsString({ message: 'Title must be Required' })
   title: string;
 
   @IsOptional()
