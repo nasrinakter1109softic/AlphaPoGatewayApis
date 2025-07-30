@@ -1,29 +1,43 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
+
 @Injectable()
 export class UploadService {
-  private s3 = new AWS.S3({
-    region: process.env.S3_REGION,
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-  });
+  private s3: AWS.S3;
+
+  constructor(private readonly config: ConfigService) {
+    this.s3 = new AWS.S3({
+      region: config.get<string>('app.s3.region'),
+      accessKeyId: config.get<string>('app.s3.accessKey'),
+      secretAccessKey: config.get<string>('app.s3.secretKey'),
+    });
+  }
 
   async uploadFile(file: {
     originalname: string;
     buffer: Buffer;
     mimetype: string;
   }): Promise<string> {
-    const key = `${uuidv4()}-${file.originalname}`;
-    if (!process.env.S3_BUCKET) {
-      throw new Error('S3_BUCKET environment variable is not defined');
+    const env = this.config.get<string>('app.env') ?? 'development';
+    const folder =
+      env === 'production' ? 'prod' : env === 'staging' ? 'staging' : 'dev';
+
+    const key = `${folder}/${uuidv4()}-${file.originalname}`;
+    const bucket = this.config.get<string>('app.s3.bucket');
+
+    if (!bucket) {
+      throw new Error('S3_BUCKET is not defined');
     }
+
     const params = {
-      Bucket: process.env.S3_BUCKET,
+      Bucket: bucket,
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
     };
+
     const result = await this.s3.upload(params).promise();
     return result.Location;
   }
