@@ -25,6 +25,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { MenuModule } from './menu/menu.module';
 import { ResponseHelper } from './common/helpers/response.helper';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { GenericQueryService } from './common/services/generic-query.service';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ResponseInterceptor,
     ResponseHelper,
     AllExceptionsFilter,
+    GenericQueryService,
   ],
-  exports: [AlphapoService, HmacUtil, ResponseInterceptor],
+  exports: [AlphapoService, ResponseInterceptor, CommonModule],
 })
 export class AppModule {}

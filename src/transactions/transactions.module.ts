@@ -11,12 +11,10 @@ import { WithdrawalFee } from './withdraw/entities/withdrawal-fee.entity';
 import { DepositTransaction } from './deposit/entities/deposit-transaction.entity';
 import { TransactionCallbackController } from './transaction-callback/transaction-callback.controller';
 import { HmacUtil } from 'src/common/utils/hmac.util';
-import { CommonModule } from 'src/common/common.module';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
 
 @Module({
   imports: [
-    CommonModule,
     TypeOrmModule.forFeature([
       CryptoAddress,
       Deposit,
