@@ -10,8 +10,8 @@ export default new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: ['src/**/*.entity.ts'],
+  entities: ['src/**/*.entity.ts'], // ✅ TS file path
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
-  logging: true,
+  // logging: true,
 });

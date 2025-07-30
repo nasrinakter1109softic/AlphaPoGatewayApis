@@ -26,6 +26,7 @@ export interface GenericQueryConfig {
   enforcedFilters?: Record<string, any>;
   /** Default order map if caller doesn't pass orderBy/orderDir */
   defaultOrder?: { column: string; direction: OrderDir };
+  relations?: string[];
 }
 
 export interface GenericQueryOptions {
@@ -63,6 +64,9 @@ export class GenericQueryService {
     const page = Number(opts.page ?? 1);
     const limit = Math.min(Number(opts.limit ?? 20), 100);
     const qb = repo.createQueryBuilder(alias);
+    (cfg.relations ?? []).forEach((relation) => {
+      qb.leftJoinAndSelect(`${alias}.${relation}`, relation);
+    });
 
     // Inject enforced filters first (e.g., companyId)
     if (cfg.enforcedFilters) {
@@ -101,7 +105,7 @@ export class GenericQueryService {
 
       // flat columns
       (cfg.searchableColumns ?? []).forEach((col) => {
-        parts.push(`${alias}.${col}::text ILIKE :s`);
+        parts.push(`${alias}."${col}"::text ILIKE :s`);
       });
 
       // json paths

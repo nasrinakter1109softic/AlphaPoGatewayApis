@@ -7,6 +7,8 @@ import { Repository } from 'typeorm';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { Menu } from 'src/menu/entity/menu.entity';
+import { Permission } from 'src/permission/entity/permission.entity';
 
 @Injectable()
 export class RoleService {
@@ -14,10 +16,15 @@ export class RoleService {
     @InjectRepository(Roles)
     private roleRepository: Repository<Roles>,
     private readonly genericQueryService: GenericQueryService,
+    @InjectRepository(Menu)
+    private menuRepo: Repository<Menu>,
+    @InjectRepository(Permission)
+    private permissionRepo: Repository<Permission>,
   ) {}
   async createRole(data: CreateRoleDto): Promise<Roles> {
     const existingRole = await this.roleRepository.findOne({
       where: { roleName: data.roleName },
+      relations: ['menus', 'permissions'],
     });
     if (existingRole) {
       throw new Error('Role with this name already exists');
@@ -51,12 +58,16 @@ export class RoleService {
       },
       {
         searchableColumns: ['roleName'], // searchable fields
+        relations: ['menus', 'permissions'],
       },
     );
     return roles;
   }
   async getRoleById(roleId: number): Promise<Roles | null> {
-    return this.roleRepository.findOneBy({ roleId });
+    return this.roleRepository.findOne({
+      where: { roleId },
+      relations: ['menus', 'permissions', 'users'],
+    });
   }
   async updateRole(roleId: number, data: UpdateRoleDto): Promise<Roles> {
     const role = await this.getRoleById(roleId);
@@ -74,15 +85,34 @@ export class RoleService {
     if (role.isPredefined) {
       throw new Error('Cannot delete predefined roles');
     }
-    if (role.isUsed) {
-      throw new Error('Cannot delete roles that are currently in use');
+    if (role.users && role.users.length > 0) {
+      throw new Error(
+        'Cannot delete role because it is already assigned to users',
+      );
     }
     await this.roleRepository.remove(role);
   }
-  async assignRole(data: any | null): Promise<void> {
-    // Logic to assign a role to a user
-    // This would typically involve updating a user entity with the roleId
-    // Implementation depends on your user management logic
-    return Promise.resolve();
+  async assignMenusToRole(roleId: number, menuIds: number[]) {
+    const role = await this.roleRepository.findOne({
+      where: { roleId: roleId },
+      relations: ['menus', 'permissions'],
+    });
+
+    const menus = await this.menuRepo.findByIds(menuIds);
+    role.menus = menus;
+
+    return this.roleRepository.save(role);
+  }
+
+  async assignPermissionsToRole(roleId: number, permissionIds: number[]) {
+    const role = await this.roleRepository.findOne({
+      where: { roleId: roleId },
+      relations: ['permissions', 'menus'],
+    });
+
+    const permissions = await this.permissionRepo.findByIds(permissionIds);
+    role.permissions = permissions;
+
+    return this.roleRepository.save(role);
   }
 }

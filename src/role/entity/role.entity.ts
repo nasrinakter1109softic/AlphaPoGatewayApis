@@ -14,22 +14,19 @@ import { User } from 'src/user/entity/user.entity';
 
 @Entity('roles')
 export class Roles {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'roleId' })
   roleId: number;
 
-  @Column({ default: false })
+  @Column({ default: false, name: 'isPredefined' })
   isPredefined: boolean;
 
-  @Column({ default: false })
-  isUsed: boolean;
-
-  @Column({ length: 100, unique: true })
+  @Column({ length: 100, unique: true, name: 'roleName' })
   roleName: string;
 
-  @CreateDateColumn({ type: 'timestamptz', precision: 6 })
+  @CreateDateColumn({ type: 'timestamptz', precision: 6, name: 'createdAt' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', precision: 6 })
+  @UpdateDateColumn({ type: 'timestamptz', precision: 6, name: 'updatedAt' })
   updatedAt: Date;
 
   @OneToMany(() => User, (user) => user.role)

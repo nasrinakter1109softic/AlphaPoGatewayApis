@@ -22,7 +22,7 @@ export class MenuService {
   }
 
   async getMenuById(id: number): Promise<Menu | null> {
-    return this.menuRepository.findOneBy({ id });
+    return this.menuRepository.findOne({ where: { id }, relations: ['roles'] });
   }
 
   async updateMenu(id: number, data: UpdateMenuDto): Promise<Menu> {
@@ -35,6 +35,11 @@ export class MenuService {
   async deleteMenu(id: number): Promise<void> {
     const menu = await this.getMenuById(id);
     if (!menu) throw new Error('Menu not found');
+    if (menu.roles && menu.roles.length > 0) {
+      throw new Error(
+        'Cannot delete menu because it is already assigned to roles',
+      );
+    }
     await this.menuRepository.remove(menu);
   }
 

@@ -32,6 +32,7 @@ export class RoleController {
       dateTo,
       filters = {},
     } = query;
+    console.log('Query parameters:', query);
     return this.roleService.getAllRoles({
       page,
       limit,
@@ -47,6 +48,21 @@ export class RoleController {
   async getRoleById(@Param('id') id: number) {
     return this.roleService.getRoleById(id);
   }
+  @Put(':id/assign-menus')
+  async assignMenusToRole(
+    @Param('id') id: number,
+    @Body() body: { menuIds: number[] },
+  ) {
+    return this.roleService.assignMenusToRole(id, body.menuIds);
+  }
+
+  @Put(':id/assign-permissions')
+  async assignPermissionsToRole(
+    @Param('id') id: number,
+    @Body() body: { permissionIds: number[] },
+  ) {
+    return this.roleService.assignPermissionsToRole(id, body.permissionIds);
+  }
   @Put(':id')
   async updateRole(@Param('id') id: number, @Body() body: UpdateRoleDto) {
     return this.roleService.updateRole(id, body);
@@ -54,9 +70,5 @@ export class RoleController {
   @Delete(':id')
   async deleteRole(@Param('id') id: number) {
     return this.roleService.deleteRole(id);
-  }
-  @Post('assign')
-  async assignRole(@Body() body: any) {
-    return this.roleService.assignRole(body);
   }
 }
