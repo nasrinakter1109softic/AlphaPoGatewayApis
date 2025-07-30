@@ -26,6 +26,9 @@ import { MenuModule } from './menu/menu.module';
 import { ResponseHelper } from './common/helpers/response.helper';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { GenericQueryService } from './common/services/generic-query.service';
+import { UserModule } from './user/user.module';
+import { CompanyModule } from './company/company.module';
+import { PermissionModule } from './permission/permission.module';
 
 @Module({
   imports: [
@@ -54,6 +57,9 @@ import { GenericQueryService } from './common/services/generic-query.service';
     TransactionsModule,
     CommonModule,
     MenuModule,
+    UserModule,
+    CompanyModule,
+    PermissionModule,
   ],
   controllers: [AlphapoController],
   providers: [
