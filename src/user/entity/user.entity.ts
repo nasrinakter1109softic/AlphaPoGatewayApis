@@ -19,27 +19,30 @@ export class User {
   userId: number;
 
   @Column({ unique: true })
-  username: string;
+  email: string;
 
   @Column()
   password: string;
+
+  @Column({ unique: true })
+  phone?: string;
 
   @Column({
     type: 'enum',
     enum: UserType,
     default: UserType.COMPANY,
   })
-  user_type: UserType;
+  userType: UserType;
 
   @Column({ default: true })
-  is_active: boolean;
+  isActive: boolean;
 
   @Column({
     type: 'enum',
     enum: UserStatus,
     default: UserStatus.PENDING,
   })
-  user_status: UserStatus;
+  userStatus: UserStatus;
 
   @OneToOne(() => Company, (company) => company.user, { nullable: true })
   @JoinColumn()
@@ -56,8 +59,8 @@ export class User {
   roleId: number;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 }

@@ -29,6 +29,7 @@ import { GenericQueryService } from './common/services/generic-query.service';
 import { UserModule } from './user/user.module';
 import { CompanyModule } from './company/company.module';
 import { PermissionModule } from './permission/permission.module';
+import { BalanceController } from './balance/balance.controller';
 
 @Module({
   imports: [
@@ -61,7 +62,7 @@ import { PermissionModule } from './permission/permission.module';
     CompanyModule,
     PermissionModule,
   ],
-  controllers: [AlphapoController],
+  controllers: [AlphapoController, BalanceController],
   providers: [
     AlphapoService,
     HmacUtil,
