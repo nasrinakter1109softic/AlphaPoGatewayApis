@@ -12,6 +12,7 @@ import {
   GenericQueryService,
   GenericQueryOptions,
 } from 'src/common/services/generic-query.service';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 
 @Injectable()
 export class PermissionService {
@@ -34,7 +35,7 @@ export class PermissionService {
     return this.permissionRepo.save(permission);
   }
 
-  async findAll(options: GenericQueryOptions) {
+  async findAll(options: GenericQueryDto) {
     return this.genericQuery.query(this.permissionRepo, 'permission', options, {
       allowedFilterColumns: ['title', 'slug'],
       searchableColumns: ['title', 'slug'],
