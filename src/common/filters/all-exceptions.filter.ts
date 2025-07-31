@@ -4,43 +4,58 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ResponseHelper } from '../helpers/response.helper';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly responseHelper: ResponseHelper) {}
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-
-    let errorData: any;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let errorMessage = 'Internal server error';
+    let errorDetails = { message: errorMessage };
 
     if (exception instanceof HttpException) {
-      const res = exception.getResponse();
-      errorData = typeof res === 'string' ? { message: res } : res;
-    } else {
-      errorData = { message: (exception as any)?.message || 'Unhandled error' };
-    }
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
 
-    const finalResponse = {
+      if (typeof exceptionResponse === 'string') {
+        errorMessage = exceptionResponse;
+        errorDetails = { message: exceptionResponse };
+      } else {
+        // For validation errors, use the first error message or default
+        const responseObj = exceptionResponse as any;
+        errorMessage = responseObj.error || 'Bad Request Exception';
+        errorDetails = {
+          message: Array.isArray(responseObj.message)
+            ? responseObj.message[0]
+            : responseObj.message || errorMessage,
+        };
+      }
+    } else if (exception instanceof Error) {
+      errorDetails = { message: exception.message };
+    }
+    const errorResponse = {
       status,
-      message: errorData.message || 'Internal server error',
-      error: errorData,
+      message: errorMessage,
+      error: errorDetails,
       request: {
         url: request.url,
         method: request.method,
       },
     };
 
-    // Avoid nesting ResponseHelper.error here
-    response.status(status).json(finalResponse);
+    this.logger.error(
+      `${request.method} ${request.url}`,
+      JSON.stringify(errorResponse),
+      'HttpExceptionFilter',
+    );
+    response.status(status).json(errorResponse);
   }
 }
