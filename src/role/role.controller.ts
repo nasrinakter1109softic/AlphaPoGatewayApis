@@ -44,7 +44,6 @@ export class RoleController {
       dateTo,
       filters = {},
     } = query;
-    console.log('Query parameters:', query);
     return this.roleService.getAllRoles({
       page,
       limit,

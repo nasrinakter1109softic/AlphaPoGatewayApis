@@ -13,6 +13,7 @@ import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { GenericQueryOptions } from 'src/common/services/generic-query.service';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 
 @Controller('permissions')
 export class PermissionController {
@@ -28,7 +29,7 @@ export class PermissionController {
   }
 
   @Get()
-  findAll(@Query() query: GenericQueryOptions) {
+  findAll(@Query() query: GenericQueryDto) {
     return this.permissionService.findAll(query);
   }
 

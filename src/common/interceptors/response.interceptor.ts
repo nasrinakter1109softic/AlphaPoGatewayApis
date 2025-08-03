@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
+  BadRequestException,
 } from '@nestjs/common';
 import { Observable, map, catchError, throwError } from 'rxjs';
 import { Request } from 'express';
@@ -24,14 +25,6 @@ export class ResponseInterceptor implements NestInterceptor {
           method: req.method,
         }),
       ),
-      catchError((err) => {
-        const errorResp = this.helper.error(
-          err.message || 'Internal server error',
-          err.response || err,
-          err.status || 500,
-        );
-        return throwError(() => errorResp);
-      }),
     );
   }
 }
