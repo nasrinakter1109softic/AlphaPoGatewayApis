@@ -10,16 +10,7 @@ import { HmacUtil } from './common/utils/hmac.util';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { RoleModule } from './role/role.module';
 import appConfig from './config/app.config';
-// import { Roles } from './role/role';
 import { TransactionsModule } from './transactions/transactions.module';
-// import { CryptoAddress } from './transactions/deposit/entities/crypto-address.entity';
-// import { Deposit } from './transactions/deposit/entities/deposit.entity';
-// import { DepositTransaction } from './transactions/deposit/entities/deposit-transaction.entity';
-// import { DepositFee } from './transactions/deposit/entities/deposit-fee.entity';
-// import { CallbackLog } from './transactions/transaction-callback/entities/callback-log.entity';
-// import { Withdrawal } from './transactions/withdraw/entities/withdrawal.entity';
-// import { WithdrawalTransaction } from './transactions/withdraw/entities/withdrawal-transaction.entity';
-// import { WithdrawalFee } from './transactions/withdraw/entities/withdrawal-fee.entity';
 import { CommonModule } from './common/common.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { MenuModule } from './menu/menu.module';
@@ -29,26 +20,37 @@ import { GenericQueryService } from './common/services/generic-query.service';
 import { UserModule } from './user/user.module';
 import { CompanyModule } from './company/company.module';
 import { PermissionModule } from './permission/permission.module';
+import { AuthModule } from './auth/auth.module';
+import { RedisModule } from './redis/redis.module';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { RefreshTokenStrategy } from './auth/strategies/refresh.strategy';
+import { EmailService } from './common/services/email.service';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
+    PassportModule.register({
+      defaultStrategy: 'jwt',
+      strategy: 'jwt-refresh',
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
     }),
-    // TypeOrmModule.forFeature([
-    //   Roles,
-    //   CryptoAddress,
-    //   Deposit,
-    //   DepositTransaction,
-    //   DepositFee,
-    //   CallbackLog,
-    //   Withdrawal,
-    //   WithdrawalTransaction,
-    //   WithdrawalFee,
-    // ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('app.jwt.secret'),
+        signOptions: {
+          expiresIn: configService.get('app.jwt.expiresIn'),
+        },
+      }),
+    }),
 
     InvoiceModule,
     UploadModule,
@@ -60,8 +62,10 @@ import { PermissionModule } from './permission/permission.module';
     UserModule,
     CompanyModule,
     PermissionModule,
+    AuthModule,
+    RedisModule,
   ],
-  controllers: [AlphapoController],
+  controllers: [AlphapoController, AppController],
   providers: [
     AlphapoService,
     HmacUtil,
@@ -69,7 +73,10 @@ import { PermissionModule } from './permission/permission.module';
     ResponseHelper,
     AllExceptionsFilter,
     GenericQueryService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    EmailService,
   ],
-  exports: [AlphapoService, ResponseInterceptor, CommonModule],
+  exports: [AlphapoService, ResponseInterceptor, CommonModule, EmailService],
 })
 export class AppModule {}

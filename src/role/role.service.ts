@@ -97,7 +97,9 @@ export class RoleService {
       where: { roleId: roleId },
       relations: ['menus', 'permissions'],
     });
-
+    if (!role) {
+      throw new Error('Role not found');
+    }
     const menus = await this.menuRepo.findByIds(menuIds);
     role.menus = menus;
 
@@ -109,10 +111,19 @@ export class RoleService {
       where: { roleId: roleId },
       relations: ['permissions', 'menus'],
     });
-
+    if (!role) {
+      throw new Error('Role not found');
+    }
     const permissions = await this.permissionRepo.findByIds(permissionIds);
     role.permissions = permissions;
 
     return this.roleRepository.save(role);
+  }
+  async getPermissionsByRole(roleId: number): Promise<Permission[]> {
+    const role = await this.roleRepository.findOne({
+      where: { roleId },
+      relations: ['permissions'],
+    });
+    return role?.permissions || [];
   }
 }
