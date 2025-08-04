@@ -20,12 +20,12 @@ import { Roles } from 'src/auth/decorators/role.decorator';
 import { Permissions } from 'src/auth/decorators/permissions.decorator';
 import { InjectPermissionsGuard } from 'src/auth/guards/inject-permissions.guard';
 
-// @UseGuards(JwtAuthGuard, RolesGuard, InjectPermissionsGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, InjectPermissionsGuard, PermissionsGuard)
 @Controller('role')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
-  // @Roles('SUPER_ADMIN')
-  // @Permissions('role:create')
+  @Roles('SUPER_ADMIN')
+  @Permissions('role:create')
   @Post('create')
   async createRole(@Body() body: CreateRoleDto) {
     return this.roleService.createRole(body);

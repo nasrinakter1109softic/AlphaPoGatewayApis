@@ -78,6 +78,6 @@ import { AppController } from './app.controller';
     RefreshTokenStrategy,
     EmailService,
   ],
-  exports: [AlphapoService, ResponseInterceptor, CommonModule, EmailService],
+  exports: [AlphapoService, ResponseInterceptor, CommonModule],
 })
 export class AppModule {}

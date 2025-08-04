@@ -28,7 +28,7 @@ export class EmailService {
     to: string,
     subject: string,
     html: string,
-    from?: string,
+    from?: string
   ): Promise<void> {
     try {
       await this.transporter.sendMail({

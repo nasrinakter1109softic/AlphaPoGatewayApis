@@ -12,6 +12,9 @@ import { UserType } from 'src/common/enums/user-type.enum';
 import { UserStatus } from 'src/common/enums/user-status';
 import { CreateCompanyDto } from './dto/create-company';
 import { HashUtil } from 'src/common/utils/hash.util';
+import { EmailService } from 'src/common/services/email.service';
+import { SmsService } from 'src/common/services/sms.service';
+import { SendMailDto } from 'src/common/dtos/send-mail.dto';
 
 @Injectable()
 export class CompanyService {
@@ -20,8 +23,9 @@ export class CompanyService {
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
   ) {}
-
 
   async create(createCompanyDto: CreateCompanyDto, isSuperAdmin: boolean) {
     const { name, email, phone, password, ...rest } = createCompanyDto;
@@ -67,6 +71,15 @@ export class CompanyService {
       });
 
       await this.companyRepo.save(company);
+      // Send welcome email and SMS
+const payload:SendMailDto = {
+        to: email,
+        subject: 'Welcome to Our Service',
+        html: `<p>Dear ${name},</p><p>Your company has been successfully created.</p>`
+        
+}
+
+      await this.emailService.sendMail(payload.to,payload.subject, payload.html );
 
       return { message: 'Company created successfully' };
     } catch (error) {
