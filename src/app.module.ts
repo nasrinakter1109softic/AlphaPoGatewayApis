@@ -29,6 +29,8 @@ import { RefreshTokenStrategy } from './auth/strategies/refresh.strategy';
 import { EmailService } from './common/services/email.service';
 import { AppController } from './app.controller';
 import { CurrencyModule } from './currency/currency.module';
+import { BalanceController } from './balance/balance.controller';
+import { BalanceModule } from './balance/balance.module';
 
 @Module({
   imports: [
@@ -66,8 +68,9 @@ import { CurrencyModule } from './currency/currency.module';
     AuthModule,
     RedisModule,
     CurrencyModule,
+    BalanceModule,
   ],
-  controllers: [AlphapoController, AppController],
+  controllers: [AlphapoController, AppController, BalanceController],
   providers: [
     AlphapoService,
     HmacUtil,

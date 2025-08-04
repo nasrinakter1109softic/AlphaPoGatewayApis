@@ -17,6 +17,7 @@ import { DepositService } from './deposit/service/deposit.service';
 import { AlphapoService } from 'src/alphapo.service';
 import { HttpModule } from '@nestjs/axios';
 import { Company } from 'src/company/entity/company.entity';
+import { Balance } from 'src/balance/entity/balance.entity';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { Company } from 'src/company/entity/company.entity';
       WithdrawalFee,
       User,
       Company,
+      Balance,
     ]),
   ],
   providers: [

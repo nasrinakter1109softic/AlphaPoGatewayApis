@@ -18,6 +18,7 @@ import { WithdrawalStatus } from '../withdraw/enums/withdrawal-status.enum';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
 import { AlphapoService } from 'src/alphapo.service';
 import { Company } from 'src/company/entity/company.entity';
+import { Balance } from 'src/balance/entity/balance.entity';
 
 @Injectable()
 export class TransactionCallbackService {
@@ -40,6 +41,8 @@ export class TransactionCallbackService {
     private readonly wFeeRepo: Repository<WithdrawalFee>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
+    @InjectRepository(Balance)
+    private readonly balanceRepo: Repository<Balance>,
     private readonly genericQueryService: GenericQueryService,
     private readonly alphapoService: AlphapoService,
   ) {}
@@ -56,7 +59,10 @@ export class TransactionCallbackService {
       return this.handleWithdrawalCallback(body);
     }
   }
-  private async handleDepositCallback(body: any, signature?: string) {
+  private async handleDepositCallback(body: any) {
+    // Ensure that the deposit is confirmed
+    if (body.status !== 'confirmed') return;
+
     let address = await this.addressRepo.findOne({
       where: { address: body.crypto_address.address },
     });
@@ -66,21 +72,23 @@ export class TransactionCallbackService {
         currency: body.crypto_address.currency,
         foreignId: body.crypto_address.foreign_id,
         tag: body.crypto_address.tag,
-        companyId: 1,
+        companyId: 1, // Adjust as per your logic for companyId assignment
       });
       address = await this.addressRepo.save(address);
     }
+
     const log = this.callbackRepo.create({
       companyId: address.companyId,
       provider: 'alphapo',
       eventType: 'deposit',
       kind: TransactionLogKind.CALLBACK,
       payload: body,
-      signature,
+      signature: body.signature,
       verified: true,
     });
     await this.callbackRepo.save(log);
-    // 3) Create deposit
+
+    // Create deposit record
     const deposit = this.depositRepo.create({
       companyId: address.companyId,
       type: body.type,
@@ -91,7 +99,7 @@ export class TransactionCallbackService {
       currencyReceived: body.currency_received.currency,
       amountReceived: body.currency_received.amount,
       amountMinusFee: body.currency_received.amount_minus_fee,
-      status: body.status as DepositStatus,
+      status: DepositStatus.CONFIRMED,
       raw: body,
       transactions: body.transactions.map((t) =>
         this.txRepo.create({
@@ -117,17 +125,17 @@ export class TransactionCallbackService {
       ),
     });
 
-    // 🔄 Update balance
-    const company = await this.companyRepo.findOne({
-      where: { companyId: address.companyId },
-    });
-    if (company) {
-      company.balance =
-        Number(company.balance) + Number(body.currency_received.amount);
-      await this.companyRepo.save(company);
-    }
-    return this.depositRepo.save(deposit);
+    // Save deposit and update balance if confirmed
+    await this.depositRepo.save(deposit);
+
+    // Update balance for confirmed deposit
+    await this.increaseBalance(
+      address.companyId,
+      body.currency_received.currency,
+      body.currency_received.amount,
+    );
   }
+
   private async handleWithdrawalCallback(body: any, signature?: string) {
     const log = this.callbackRepo.create({
       provider: 'alphapo',
@@ -139,12 +147,12 @@ export class TransactionCallbackService {
     });
     await this.callbackRepo.save(log);
 
-    // find by request_id or other linkage
+    // Find by request_id or other linkage
     let withdrawal = await this.withdrawalRepo.findOne({
       where: { requestId: body.request_id },
     });
+
     if (!withdrawal) {
-      // fallback: try by address+amount maybe, or create partial
       withdrawal = this.withdrawalRepo.create({
         requestId: body.request_id ?? `cb-${body.id}`,
         foreignId: null,
@@ -158,7 +166,7 @@ export class TransactionCallbackService {
       });
     }
 
-    // map status
+    // Map status
     const statusMap: Record<string, WithdrawalStatus> = {
       processing: WithdrawalStatus.PROCESSING,
       confirmed: WithdrawalStatus.CONFIRMED,
@@ -168,7 +176,7 @@ export class TransactionCallbackService {
     withdrawal.amountTo = body.amount_to ?? withdrawal.amountTo;
     withdrawal.raw = body;
 
-    // attach tx & fees
+    // Attach tx & fees
     if (body.transactions?.length) {
       withdrawal.transactions = body.transactions.map((t) =>
         this.wTxRepo.create({
@@ -201,13 +209,52 @@ export class TransactionCallbackService {
       processedAt: new Date(),
     });
 
-    return saved;
+    if (body.status === 'confirmed') {
+      await this.decreaseBalance(
+        withdrawal.companyId, // Using companyId from withdrawal
+        body.currency,
+        body.amount_to ?? body.amount_from,
+      );
+    }
 
-    // 🔄 Optionally reduce balance if you held before confirmation
-    // user.company.balance = Number(user.company.balance) - Number(payload.amount);
-    // await this.companyRepo.save(user.company);
+    return saved;
   }
 
+  private async increaseBalance(
+    companyId: number,
+    currency: string,
+    amount: string,
+  ) {
+    let balance = await this.balanceRepo.findOne({
+      where: { companyId, currency },
+    });
+
+    if (!balance) {
+      balance = this.balanceRepo.create({ companyId, currency, balance: 0 });
+    }
+
+    balance.balance = Number(balance.balance) + Number(amount);
+    await this.balanceRepo.save(balance);
+  }
+  private async decreaseBalance(
+    companyId: number,
+    currency: string,
+    amount: string,
+  ) {
+    const balance = await this.balanceRepo.findOne({
+      where: { companyId, currency },
+    });
+
+    if (!balance) {
+      console.warn(
+        `Balance record not found for company ${companyId} and currency ${currency}`,
+      );
+      return;
+    }
+
+    balance.balance = Math.max(0, Number(balance.balance) - Number(amount));
+    await this.balanceRepo.save(balance);
+  }
   async callbacklogs(options: {
     page?: number;
     limit?: number;

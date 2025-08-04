@@ -18,13 +18,13 @@ export class User {
   @PrimaryGeneratedColumn()
   userId: number;
 
+  @Column({ unique: true })
+  email: string;
+
   @Column()
   password: string;
 
   @Column({ unique: true })
-  email: string;
-
-  @Column({ unique: true, nullable: true })
   phone?: string;
 
   @Column({
