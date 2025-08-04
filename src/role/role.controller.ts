@@ -7,19 +7,31 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/role.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
+import { Permissions } from 'src/auth/decorators/permissions.decorator';
+import { InjectPermissionsGuard } from 'src/auth/guards/inject-permissions.guard';
 
+@UseGuards(JwtAuthGuard, RolesGuard, InjectPermissionsGuard, PermissionsGuard)
 @Controller('role')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
+  @Roles('SUPER_ADMIN')
+  @Permissions('role:create')
   @Post('create')
   async createRole(@Body() body: CreateRoleDto) {
     return this.roleService.createRole(body);
   }
+  @Roles('SUPER_ADMIN')
+  @Permissions('role:read')
   @Get()
   async getRoles(@Query() query: GenericQueryDto) {
     const {

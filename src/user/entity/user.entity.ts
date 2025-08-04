@@ -30,7 +30,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserType,
-    default: UserType.COMPANY,
+    default: UserType.MERCHANT,
   })
   userType: UserType;
 
