@@ -17,7 +17,7 @@ import { DepositFee } from './deposit-fee.entity';
 
 @Entity('deposits')
 export class Deposit {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()

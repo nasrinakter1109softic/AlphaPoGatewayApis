@@ -14,7 +14,7 @@ import { DecimalTransformer } from 'src/common/db/decimal.transformer';
 
 @Entity('deposit_transactions')
 export class DepositTransaction {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()

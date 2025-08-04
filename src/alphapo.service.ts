@@ -10,6 +10,7 @@ export class AlphapoService {
   private readonly apiKey: string;
   private readonly apiSecret: string;
   private readonly apiUrl: string;
+  private readonly logger = console; // Replace with a proper logger in production
   constructor(
     private readonly httpService: HttpService,
     private readonly hmacUtil: HmacUtil,
@@ -33,10 +34,28 @@ export class AlphapoService {
       },
     };
     const url = `${this.apiUrl}${endpoint}`;
-    const response = await this.httpService.post(url, data, config).toPromise();
-    return response?.data;
+    try {
+      const response = await this.httpService
+        .post(url, data, config)
+        .toPromise();
+      return response?.data;
+    } catch (error) {
+      this.logger.error('AlphaPo API Error', error);
+      throw new Error('AlphaPo API failed');
+    }
   }
-  async createDepositAddress(foreignId: string, currency: string) {
+  async createDepositAddress(
+    foreignId: string,
+    currency: string,
+    convertTo?: string,
+  ): Promise<any> {
+    if (convertTo) {
+      return this.postToAlphaPo('/api/v2/addresses/take', {
+        foreign_id: foreignId,
+        currency,
+        convert_to: convertTo,
+      });
+    }
     return this.postToAlphaPo('/api/v2/addresses/take', {
       foreign_id: foreignId,
       currency,

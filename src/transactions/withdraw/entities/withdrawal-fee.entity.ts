@@ -11,7 +11,7 @@ import { DecimalTransformer } from '../../../common/db/decimal.transformer';
 
 @Entity('withdrawal_fees')
 export class WithdrawalFee {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()

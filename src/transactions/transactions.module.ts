@@ -12,9 +12,15 @@ import { DepositTransaction } from './deposit/entities/deposit-transaction.entit
 import { TransactionCallbackController } from './transaction-callback/transaction-callback.controller';
 import { HmacUtil } from 'src/common/utils/hmac.util';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { User } from 'src/user/entity/user.entity';
+import { DepositService } from './deposit/service/deposit.service';
+import { AlphapoService } from 'src/alphapo.service';
+import { HttpModule } from '@nestjs/axios';
+import { Company } from 'src/company/entity/company.entity';
 
 @Module({
   imports: [
+    HttpModule,
     TypeOrmModule.forFeature([
       CryptoAddress,
       Deposit,
@@ -24,9 +30,17 @@ import { GenericQueryService } from 'src/common/services/generic-query.service';
       Withdrawal,
       WithdrawalTransaction,
       WithdrawalFee,
+      User,
+      Company,
     ]),
   ],
-  providers: [TransactionCallbackService, HmacUtil, GenericQueryService],
+  providers: [
+    TransactionCallbackService,
+    HmacUtil,
+    GenericQueryService,
+    DepositService,
+    AlphapoService,
+  ],
   exports: [TransactionCallbackService],
   controllers: [TransactionCallbackController],
 })
