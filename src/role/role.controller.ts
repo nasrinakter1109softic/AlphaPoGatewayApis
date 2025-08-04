@@ -55,10 +55,12 @@ export class RoleController {
       orderDir,
     });
   }
+  @Roles('SUPER_ADMIN')
   @Get(':id')
   async getRoleById(@Param('id') id: number) {
     return this.roleService.getRoleById(id);
   }
+  @Roles('SUPER_ADMIN')
   @Put(':id/assign-menus')
   async assignMenusToRole(
     @Param('id') id: number,
@@ -66,7 +68,7 @@ export class RoleController {
   ) {
     return this.roleService.assignMenusToRole(id, body.menuIds);
   }
-
+  @Roles('SUPER_ADMIN')
   @Put(':id/assign-permissions')
   async assignPermissionsToRole(
     @Param('id') id: number,
@@ -74,10 +76,12 @@ export class RoleController {
   ) {
     return this.roleService.assignPermissionsToRole(id, body.permissionIds);
   }
+  @Roles('SUPER_ADMIN')
   @Put(':id')
   async updateRole(@Param('id') id: number, @Body() body: UpdateRoleDto) {
     return this.roleService.updateRole(id, body);
   }
+  @Roles('SUPER_ADMIN')
   @Delete(':id')
   async deleteRole(@Param('id') id: number) {
     return this.roleService.deleteRole(id);

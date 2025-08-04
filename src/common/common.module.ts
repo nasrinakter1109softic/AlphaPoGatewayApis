@@ -7,15 +7,23 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Menu } from 'src/menu/entity/menu.entity';
 import { Permission } from 'src/permission/entity/permission.entity';
 import { PermissionCacheService } from './services/permission-cache.service';
+import { HttpModule } from '@nestjs/axios';
+import { SmsService } from './services/sms.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Roles, Menu, Permission])],
+  imports: [HttpModule, TypeOrmModule.forFeature([Roles, Menu, Permission])],
   providers: [
     GenericQueryService,
     ResponseHelper,
     RoleService,
     PermissionCacheService,
+    SmsService,
   ],
-  exports: [GenericQueryService, ResponseHelper, PermissionCacheService],
+  exports: [
+    GenericQueryService,
+    ResponseHelper,
+    PermissionCacheService,
+    SmsService,
+  ],
 })
 export class CommonModule {}

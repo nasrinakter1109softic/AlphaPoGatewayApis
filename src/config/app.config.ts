@@ -45,4 +45,8 @@ export default registerAs('app', () => ({
     fromName: process.env.MAIL_FROM_NAME,
     encryption: process.env.MAIL_ENCRYPTION,
   },
+  sms: {
+    url: process.env.ALPHA_SMS_URL,
+    apiKey: process.env.ALPHA_SMS_API_KEY,
+  },
 }));
