@@ -3,9 +3,17 @@ import { ConfigService } from '@nestjs/config';
 
 export const getTypeOrmConfig = (
   configService: ConfigService,
-): TypeOrmModuleOptions => ({
+): TypeOrmModuleOptions => {
+  console.log({
+  host: configService.get('DB_HOST'),
+  port: configService.get('DB_PORT'),
+  user: configService.get('DB_USER'),
+  pass: configService.get('DB_PASS'),
+  db: configService.get('DB_NAME'),
+});
+  return {
   type: 'postgres',
-  //  url: configService.get('DATABASE_URL'),
+   url: configService.get('DATABASE_URL'),
   host: configService.get('DB_HOST'),
   port: +(configService.get<number>('DB_PORT') ?? 5432),
   username: configService.get('DB_USER'),
@@ -14,4 +22,5 @@ export const getTypeOrmConfig = (
   autoLoadEntities: true,
   synchronize: true,
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-});
+}
+};

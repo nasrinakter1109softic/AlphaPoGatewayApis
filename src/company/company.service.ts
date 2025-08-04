@@ -22,102 +22,60 @@ export class CompanyService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-//   async create(createCompanyDto: CreateCompanyDto){
-//     const { name, email, phone, password } = createCompanyDto;
 
-//     // Check if company already exists
-//     const existingCompany = await this.companyRepo.findOne({
-//       where: [{ name }, { email }],
-//     });
+  async create(createCompanyDto: CreateCompanyDto, isSuperAdmin: boolean) {
+    const { name, email, phone, password, ...rest } = createCompanyDto;
 
-//     if (existingCompany) {
-//       throw new BadRequestException('Company name or email already exists');
-//     }
+    try {
+      //  Check for duplicate company
+      const [existingCompany, existingUser] = await Promise.all([
+        this.companyRepo.findOne({ where: [{ name }, { email }] }),
+        this.userRepo.findOne({ where: [{ email }, { phone }] }),
+      ]);
 
-//     // Check if user with the same email or phone already exists
-//     const existingUser = await this.userRepo.findOne({
-//       where: [{ email }, { phone }],
-//     });
-//     if (existingUser) {
-//       throw new BadRequestException(
-//         'User with this email or phone already exists',
-//       );
-//     }
-//     // hash password
-//     const hashedPassword = await HashUtil.hashPassword(password);
-//     // Create linked user
-//     const user = this.userRepo.create({
-//       email,
-//       phone,
-//       password: hashedPassword,
-//       userType: UserType.COMPANY,
-//       userStatus: UserStatus.PENDING,
-//       isActive: true,
-//     });
-//     const savedUser = await this.userRepo.save(user);
+      if (existingCompany) {
+        throw new BadRequestException('Company name or email already exists');
+      }
 
-//     const company = this.companyRepo.create({
-//       ...createCompanyDto,
-//       user: savedUser,
-//     });
-//     this.companyRepo.save(company);
-//     return { message: 'Company created successfully' };
-//   }
+      if (existingUser) {
+        throw new BadRequestException(
+          'User with this email or phone already exists',
+        );
+      }
 
- async create(createCompanyDto: CreateCompanyDto) {
-  const { name, email, phone, password, ...rest } = createCompanyDto;
+      // Hash password
+      const hashedPassword = await HashUtil.hashPassword(password);
 
-  try {
-    //  Check for duplicate company
-    const [existingCompany, existingUser] = await Promise.all([
-      this.companyRepo.findOne({ where: [{ name }, { email }] }),
-      this.userRepo.findOne({ where: [{ email }, { phone }] }),
-    ]);
+      // 👤 Create and persist user
+      const user = this.userRepo.create({
+        email,
+        phone,
+        password: hashedPassword,
+        userType: UserType.MERCHANT,
+        userStatus: isSuperAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
+        isActive: isSuperAdmin ? true : false,
+      });
 
-    if (existingCompany) {
-      throw new BadRequestException('Company name or email already exists');
+      const savedUser = await this.userRepo.save(user);
+      // 🏢 Create and persist company
+      const company = this.companyRepo.create({
+        name,
+        email,
+        phone,
+        ...rest,
+        user: savedUser,
+      });
+
+      await this.companyRepo.save(company);
+
+      return { message: 'Company created successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+
+      console.error('❌ Company creation failed:', error);
+      throw new InternalServerErrorException('Failed to create company');
     }
-
-    if (existingUser) {
-      throw new BadRequestException('User with this email or phone already exists');
-    }
-
-    // 🔐 Hash password
-    const hashedPassword = await HashUtil.hashPassword(password);
-
-    // 👤 Create and persist user
-    const user = this.userRepo.create({
-      email,
-      phone,
-      password: hashedPassword,
-      userType: UserType.COMPANY,
-      userStatus: UserStatus.PENDING,
-      isActive: true,
-    });
-
-    const savedUser = await this.userRepo.save(user);
-
-    // 🏢 Create and persist company
-    const company = this.companyRepo.create({
-      name,
-      email,
-      phone,
-      ...rest,
-      user: savedUser,
-    });
-
-    await this.companyRepo.save(company);
-
-    return { message: 'Company created successfully' };
-
-  } catch (error) {
-    if (error instanceof BadRequestException) throw error;
-
-    console.error('❌ Company creation failed:', error);
-    throw new InternalServerErrorException('Failed to create company');
   }
-}
-
 
   async findAll(): Promise<Company[]> {
     return this.companyRepo.find({ relations: ['user', 'balances'] });
