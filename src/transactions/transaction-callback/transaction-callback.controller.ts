@@ -6,6 +6,7 @@ import {
   Headers,
   Get,
   Query,
+  UnauthorizedException,
   //   UnauthorizedException,
 } from '@nestjs/common';
 import { TransactionCallbackService } from './transaction-callback.service';
@@ -28,15 +29,15 @@ export class TransactionCallbackController {
     @Body() body: any,
     @Headers('x-processing-signature') signature?: string,
   ) {
-    // const computedSig = this.hmacUtil.generateSignature(
-    //   body,
-    //   process.env.ALPHAPO_SECRET ?? '',
-    // );
-
-    // const isValid = computedSig === signature;
-    // if (!isValid) {
-    //   throw new UnauthorizedException('Invalid signature');
-    // }
+    const computedSig = this.hmacUtil.generateSignature(
+      body,
+      process.env.ALPHAPO_SECRET ?? '',
+    );
+    console.log('Generated Signature:', computedSig, signature);
+    const isValid = computedSig === signature;
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid signature');
+    }
 
     try {
       await this.callbackService.handleAlphapoCallback(body, signature);

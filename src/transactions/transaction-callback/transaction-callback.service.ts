@@ -48,24 +48,18 @@ export class TransactionCallbackService {
   ) {}
 
   async handleAlphapoCallback(body: any, signature?: string) {
-    if (!this.alphapoService.verifyCallbackSignature(body, signature || '')) {
-      console.warn('Invalid callback signature');
-      return;
-    }
     const type = body.type;
     if (type === 'deposit') {
-      return this.handleDepositCallback(body);
+      return this.handleDepositCallback(body, signature);
     } else if (type === 'withdrawal') {
-      return this.handleWithdrawalCallback(body);
+      return this.handleWithdrawalCallback(body, signature);
     }
   }
-  private async handleDepositCallback(body: any) {
-    // Ensure that the deposit is confirmed
-    if (body.status !== 'confirmed') return;
-
+  private async handleDepositCallback(body: any, signature?: string) {
     let address = await this.addressRepo.findOne({
       where: { address: body.crypto_address.address },
     });
+
     if (!address) {
       address = this.addressRepo.create({
         address: body.crypto_address.address,
@@ -83,58 +77,68 @@ export class TransactionCallbackService {
       eventType: 'deposit',
       kind: TransactionLogKind.CALLBACK,
       payload: body,
-      signature: body.signature,
+      signature,
       verified: true,
     });
     await this.callbackRepo.save(log);
 
-    // Create deposit record
-    const deposit = this.depositRepo.create({
-      companyId: address.companyId,
-      type: body.type,
-      cryptoAddress: address,
-      cryptoAddressId: address.id,
-      currencySent: body.currency_sent.currency,
-      amountSent: body.currency_sent.amount,
-      currencyReceived: body.currency_received.currency,
-      amountReceived: body.currency_received.amount,
-      amountMinusFee: body.currency_received.amount_minus_fee,
-      status: DepositStatus.CONFIRMED,
-      raw: body,
-      transactions: body.transactions.map((t) =>
-        this.txRepo.create({
+    // Only process the deposit and update balance if confirmed
+    if (body.status === 'confirmed') {
+      const existingTransaction = await this.txRepo.findOne({
+        where: { txid: body.currency_received.txid }, // Query DepositTransaction for txid
+      });
+      if (existingTransaction) {
+        console.log('Transaction already exists:', existingTransaction);
+      } else {
+        const deposit = this.depositRepo.create({
           companyId: address.companyId,
-          currency: t.currency,
-          transactionType: t.transaction_type,
-          type: t.type,
-          address: t.address,
-          tag: t.tag,
-          amount: t.amount,
-          txid: t.txid,
-          riskscore: t.riskscore,
-          confirmations: t.confirmations,
-        }),
-      ),
-      fees: body.fees.map((f) =>
-        this.feeRepo.create({
-          companyId: address.companyId,
-          type: f.type,
-          currency: f.currency,
-          amount: f.amount,
-        }),
-      ),
-    });
+          type: body.type,
+          cryptoAddress: address,
+          cryptoAddressId: address.id,
+          currencySent: body.currency_sent.currency,
+          amountSent: body.currency_sent.amount,
+          currencyReceived: body.currency_received.currency,
+          amountReceived: body.currency_received.amount,
+          amountMinusFee: body.currency_received.amount_minus_fee,
+          status: DepositStatus.CONFIRMED,
+          raw: body,
+          transactions: body.transactions.map((t) =>
+            this.txRepo.create({
+              companyId: address.companyId,
+              currency: t.currency,
+              transactionType: t.transaction_type,
+              type: t.type,
+              address: t.address,
+              tag: t.tag,
+              amount: t.amount,
+              txid: t.txid,
+              riskscore: t.riskscore,
+              confirmations: t.confirmations,
+            }),
+          ),
+          fees: body.fees.map((f) =>
+            this.feeRepo.create({
+              companyId: address.companyId,
+              type: f.type,
+              currency: f.currency,
+              amount: f.amount,
+            }),
+          ),
+        });
 
-    // Save deposit and update balance if confirmed
-    await this.depositRepo.save(deposit);
+        // Save deposit
+        await this.depositRepo.save(deposit);
+      }
 
-    // Update balance for confirmed deposit
-    await this.increaseBalance(
-      address.companyId,
-      body.currency_received.currency,
-      body.currency_received.amount,
-    );
+      // Update balance
+      await this.increaseBalance(
+        address.companyId,
+        body.currency_received.currency,
+        body.currency_received.amount,
+      );
+    }
   }
+  // Update balance for confirmed deposit
 
   private async handleWithdrawalCallback(body: any, signature?: string) {
     const log = this.callbackRepo.create({

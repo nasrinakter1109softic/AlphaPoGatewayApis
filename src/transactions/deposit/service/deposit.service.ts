@@ -4,6 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AlphapoService } from 'src/alphapo.service';
 import { User } from 'src/user/entity/user.entity';
+import { Deposit } from '../entities/deposit.entity';
+import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
 
 @Injectable()
 export class DepositService {
@@ -12,14 +15,16 @@ export class DepositService {
     private readonly cryptoAddressRepo: Repository<CryptoAddress>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
     private readonly alphapoService: AlphapoService,
+    private readonly genericQueryService: GenericQueryService,
   ) {}
-  async createAddressForUser(
-    userId: number,
-    currency: string,
-    convertTo?: string,
-  ) {
-    // Step 1: Find user's company
+  async createAddressForUser(data: CreateCryptoAddressDto, userId: number) {
+    const { currency, convertTo } = data;
+    console.log('Creating address for:', { userId, currency, convertTo });
+
+    // Step 1: Find user and company
     const user = await this.userRepo.findOne({
       where: { userId: userId },
       relations: ['company'],
@@ -30,7 +35,18 @@ export class DepositService {
     }
 
     const companyId = user.company.companyId;
-    // Step 2: Create address from Alphapo
+
+    // Step 2: Check if address already exists for this company and currency
+    const existingAddress = await this.cryptoAddressRepo.findOne({
+      where: { companyId, currency },
+    });
+
+    if (existingAddress) {
+      console.log('Existing address found:', existingAddress);
+      return existingAddress; // Return existing address if found
+    }
+
+    // Step 3: Create a new address from Alphapo
     const payload = {
       foreign_id: `user-${userId}`,
       currency,
@@ -43,15 +59,15 @@ export class DepositService {
       payload.convert_to,
     );
 
-    if (!response || !response.data || !response.data.data) {
+    if (!response || !response.data) {
       throw new Error('Failed to create crypto address');
     }
 
-    const addressData = response.data.data;
+    const addressData = response.data;
 
-    // Step 3: Save to DB
+    // Step 4: Save new address to DB
     await this.cryptoAddressRepo.save({
-      companyId, // ✅ here you assign the company ID
+      companyId, // Assign the companyId to the new address
       userId,
       currency,
       address: addressData.address,
@@ -60,5 +76,32 @@ export class DepositService {
     });
 
     return addressData;
+  }
+  async getDepositList(queryOptions: any) {
+    const result = await this.genericQueryService.query(
+      this.depositRepo,
+      'd',
+      queryOptions,
+      {
+        allowedFilterColumns: ['status', 'companyId', 'currencyReceived'],
+        searchableColumns: ['currencySent', 'currencyReceived'],
+        defaultOrder: { column: 'createdAt', direction: 'DESC' },
+        relations: ['cryptoAddress', 'company', 'fees'],
+        // excludedFields: [
+        //   'crypto_address_id',
+        //   'amount_minus_fee',
+        //   'raw',
+        //   'fees.amount',
+        // ],
+      },
+      // selectFields,
+      // [
+      //   'd.id AS id',
+      //   'd.status AS status',
+      //   'd.createdAt AS createdAt',
+      //   'd.updatedAt AS updatedAt',
+      // ],
+    );
+    return result;
   }
 }

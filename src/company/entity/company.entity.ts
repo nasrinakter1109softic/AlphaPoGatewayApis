@@ -1,4 +1,5 @@
 import { Balance } from 'src/balance/entity/balance.entity';
+import { Deposit } from 'src/transactions/deposit/entities/deposit.entity';
 import { Withdrawal } from 'src/transactions/withdraw/entities/withdrawal.entity';
 import { User } from 'src/user/entity/user.entity'; // Correct the path
 import {
@@ -60,6 +61,9 @@ export class Company {
 
   @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.company)
   withdrawals: Withdrawal[];
+
+  @OneToMany(() => Deposit, (deposit) => deposit.company)
+  deposits: Deposit[];
 
   @OneToOne(() => User, (user) => user.company)
   @JoinColumn()

@@ -14,7 +14,7 @@ export class Balance {
   @PrimaryGeneratedColumn()
   balanceId: number;
 
-  @Column({ length: 3 })
+  @Column()
   currency: string;
 
   @Column({

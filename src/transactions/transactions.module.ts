@@ -18,6 +18,7 @@ import { AlphapoService } from 'src/alphapo.service';
 import { HttpModule } from '@nestjs/axios';
 import { Company } from 'src/company/entity/company.entity';
 import { Balance } from 'src/balance/entity/balance.entity';
+import { DepositController } from './deposit/controller/deposit.controller';
 
 @Module({
   imports: [
@@ -44,6 +45,6 @@ import { Balance } from 'src/balance/entity/balance.entity';
     AlphapoService,
   ],
   exports: [TransactionCallbackService],
-  controllers: [TransactionCallbackController],
+  controllers: [TransactionCallbackController, DepositController],
 })
 export class TransactionsModule {}

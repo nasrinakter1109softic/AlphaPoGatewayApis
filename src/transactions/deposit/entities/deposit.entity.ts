@@ -14,6 +14,7 @@ import { DepositStatus } from '../enums/deposit-status.enum';
 import { DecimalTransformer } from 'src/common/db/decimal.transformer';
 import { DepositTransaction } from './deposit-transaction.entity';
 import { DepositFee } from './deposit-fee.entity';
+import { Company } from 'src/company/entity/company.entity';
 
 @Entity('deposits')
 export class Deposit {
@@ -26,6 +27,10 @@ export class Deposit {
   /** "deposit" | "invoice" | etc. */
   @Column({ length: 20 })
   type: string;
+
+  @ManyToOne(() => Company, (company) => company.deposits)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
 
   @ManyToOne(() => CryptoAddress, (a) => a.deposits, { eager: true })
   @JoinColumn({ name: 'crypto_address_id' })
