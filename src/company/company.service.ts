@@ -154,6 +154,20 @@ export class CompanyService {
     return company;
   }
 
+  async approveCompany(id: number, status:UserStatus): Promise<Company> {
+    const company = await this.companyRepo.findOne({
+      where: { companyId: id },
+      relations: ['user', 'balances'],
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    // const { ststus: currentStatus } = 
+    // if (company.user) {
+    //   company.user.userStatus = status.toUpperCase() as UserStatus;
+    //   await this.userRepo.save(company.user);
+    // }
+    return company;
+  }
+
   async update(id: number, dto: UpdateCompanyDto) {
     const company = await this.findOne(id);
     if (!company) throw new NotFoundException('Company not found');

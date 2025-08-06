@@ -9,12 +9,14 @@ import {
   UnauthorizedException,
   Query,
   Put,
+  Patch
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { UserStatus } from 'src/common/enums/user-status';
 
 @Controller('companies')
 export class CompanyController {
@@ -35,6 +37,12 @@ export class CompanyController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.companyService.findOne(+id);
+  }
+
+  @Patch(':id/approve')
+  approveCompany(@Param('id') id: string, @Body() status: UserStatus) {
+    console.log('Approving company with ID:', id, 'Status:', status);
+    return this.companyService.approveCompany(+id,status);
   }
 
   @Delete(':id')
