@@ -31,7 +31,7 @@ export class Company {
   @Column()
   businessName: string;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   kycDocument?: string;
 
   @Column({ nullable: true })

@@ -19,7 +19,7 @@ import { EmailService } from './services/email.service';
     RoleService,
     PermissionCacheService,
     SmsService,
-    EmailService
+    EmailService,
   ],
   exports: [
     GenericQueryService,

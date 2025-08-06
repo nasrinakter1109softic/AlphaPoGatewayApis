@@ -27,7 +27,7 @@ export class Balance {
   @ManyToOne(() => Company, (company) => company.balances)
   company: Company;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   companyId: string;
 
   @CreateDateColumn()

@@ -8,7 +8,6 @@ import {
 } from 'class-validator';
 import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
 
-
 export class CreateCompanyDto {
   @IsString()
   name: string;
@@ -30,7 +29,9 @@ export class CreateCompanyDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['PHONE', 'EMAIL'],{message: 'SendOtpType must be either Phone or email'})
+  @IsIn(['PHONE', 'EMAIL'], {
+    message: 'SendOtpType must be either Phone or email',
+  })
   sendOtpType?: SendOtpType;
 
   @IsOptional()

@@ -135,7 +135,7 @@ export class CompanyService {
 
   async findAll(options: GenericQueryDto) {
     return this.genericQuery.query(this.companyRepo, 'company', options, {
-      allowedFilterColumns: ['name', 'email', 'phone','softDelete'],
+      allowedFilterColumns: ['name', 'email', 'phone', 'softDelete'],
       searchableColumns: ['name', 'email', 'phone'],
       enforcedFilters: { softDelete: false },
       relations: ['user', 'balances'],
@@ -154,20 +154,24 @@ export class CompanyService {
     return company;
   }
 
-    async update(id: number, dto: UpdateCompanyDto) {
-      const company = await this.findOne(id);
-       if (!company) throw new NotFoundException('Company not found');
-     const updatedCompany =  await this.companyRepo.update(id, dto);
-      if (!updatedCompany.affected) {
-        throw new BadRequestException('Failed to update company');
-      }
-      return {message: `Company with ${company.companyId} updated successfully`, };
+  async update(id: number, dto: UpdateCompanyDto) {
+    const company = await this.findOne(id);
+    if (!company) throw new NotFoundException('Company not found');
+    const updatedCompany = await this.companyRepo.update(id, dto);
+    if (!updatedCompany.affected) {
+      throw new BadRequestException('Failed to update company');
     }
+    return {
+      message: `Company with ${company.companyId} updated successfully`,
+    };
+  }
 
   async remove(id: number): Promise<{ message: string }> {
     const company = await this.findOne(id);
     if (!company) throw new NotFoundException('Company not found');
-    await this.companyRepo.update(+id, {  softDelete: true });
-    return {message: `Company with ${company.companyId} deleted successfully`, };
+    await this.companyRepo.update(+id, { softDelete: true });
+    return {
+      message: `Company with ${company.companyId} deleted successfully`,
+    };
   }
 }

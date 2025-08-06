@@ -14,7 +14,7 @@ export class InjectPermissionsGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    
+
     if (!user || !user.userId || !user.role?.roleId) {
       return true;
     }
@@ -22,7 +22,7 @@ export class InjectPermissionsGuard implements CanActivate {
     // Only load if permissions not already present
     if (!user.permissions || user.permissions.length === 0) {
       let permissions = await this.permissionCache.getPermissions(user.userId);
-      
+
       if (!permissions) {
         const permEntities = await this.roleService.getPermissionsByRole(
           user.role.roleId,

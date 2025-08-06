@@ -9,7 +9,10 @@ import { CommonModule } from 'src/common/common.module';
 import { Otp } from 'src/otp/entity/otp.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Company, User, Balance,Otp]), CommonModule],
+  imports: [
+    TypeOrmModule.forFeature([Company, User, Balance, Otp]),
+    CommonModule,
+  ],
 
   controllers: [CompanyController],
   providers: [CompanyService],
