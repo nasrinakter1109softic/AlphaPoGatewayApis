@@ -18,6 +18,9 @@ import { SendMailDto } from 'src/common/dtos/send-mail.dto';
 import { Otp } from 'src/otp/entity/otp.entity';
 import { OtpUtil } from 'src/common/utils/otp.util';
 import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
+import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @Injectable()
 export class CompanyService {
@@ -30,8 +33,9 @@ export class CompanyService {
     private readonly otpRepo: Repository<Otp>,
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
+    private readonly genericQuery: GenericQueryService,
   ) {}
-   async create(
+  async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
     isSuperAdmin: boolean,
     sendOtpType: SendOtpType,
@@ -70,7 +74,7 @@ export class CompanyService {
         email,
         phone,
         ...rest,
-        isAdminCreated: isSuperAdmin? true : false,
+        isAdminCreated: isSuperAdmin ? true : false,
         user: savedUser,
       });
 
@@ -88,7 +92,7 @@ export class CompanyService {
           expireAt: otpExpiry.toISOString(),
           used: false,
           user: savedUser,
-          userId: savedUser.userId
+          userId: savedUser.userId,
         });
 
         //  Send OTP
@@ -103,7 +107,11 @@ export class CompanyService {
             `,
           };
 
-          await this.emailService.sendMail(payload.to, payload.subject, payload.html);
+          await this.emailService.sendMail(
+            payload.to,
+            payload.subject,
+            payload.html,
+          );
           message += '. Verification OTP sent via email.';
         } else if (sendOtpType === SendOtpType.PHONE) {
           await this.smsService.sendSms(
@@ -125,8 +133,13 @@ export class CompanyService {
     }
   }
 
-  async findAll(): Promise<Company[]> {
-    return this.companyRepo.find({ relations: ['user', 'balances'] });
+  async findAll(options: GenericQueryDto) {
+    return this.genericQuery.query(this.companyRepo, 'company', options, {
+      allowedFilterColumns: ['name', 'email', 'phone','softDelete'],
+      searchableColumns: ['name', 'email', 'phone'],
+      enforcedFilters: { softDelete: false },
+      relations: ['user', 'balances'],
+    });
   }
 
   async findOne(id: number): Promise<Company> {
@@ -135,18 +148,26 @@ export class CompanyService {
       relations: ['user', 'balances'],
     });
     if (!company) throw new NotFoundException('Company not found');
+    if (company.user) {
+      delete company.user.password;
+    }
     return company;
   }
 
-  //   async update(id: number, dto: UpdateCompanyDto): Promise<Company> {
-  //     const company = await this.findOne(id);
-  //     await this.companyRepo.update(id, dto);
-  //     return this.findOne(id);
-  //   }
+    async update(id: number, dto: UpdateCompanyDto) {
+      const company = await this.findOne(id);
+       if (!company) throw new NotFoundException('Company not found');
+     const updatedCompany =  await this.companyRepo.update(id, dto);
+      if (!updatedCompany.affected) {
+        throw new BadRequestException('Failed to update company');
+      }
+      return {message: `Company with ${company.companyId} updated successfully`, };
+    }
 
-  async remove(id: number): Promise<{ success: true }> {
+  async remove(id: number): Promise<{ message: string }> {
     const company = await this.findOne(id);
-    await this.companyRepo.remove(company);
-    return { success: true };
+    if (!company) throw new NotFoundException('Company not found');
+    await this.companyRepo.update(+id, {  softDelete: true });
+    return {message: `Company with ${company.companyId} deleted successfully`, };
   }
 }
