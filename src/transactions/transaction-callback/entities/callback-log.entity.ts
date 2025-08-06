@@ -17,7 +17,7 @@ export enum TransactionLogStatus {
 }
 @Entity('callback_logs')
 export class CallbackLog {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()

@@ -25,6 +25,7 @@ export class UploadService {
       env === 'production' ? 'prod' : env === 'staging' ? 'staging' : 'dev';
 
     const key = `${folder}/${uuidv4()}-${file.originalname}`;
+    console.log(key);
     const bucket = this.config.get<string>('app.s3.bucket');
 
     if (!bucket) {

@@ -3,15 +3,18 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Deposit } from './deposit.entity';
+import { CurrencyEntity } from 'src/currency/entities/currency.entity';
 
 @Entity('crypto_addresses')
 export class CryptoAddress {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()
@@ -33,6 +36,10 @@ export class CryptoAddress {
 
   @OneToMany(() => Deposit, (d) => d.cryptoAddress)
   deposits: Deposit[];
+
+  @ManyToOne(() => CurrencyEntity, (currency) => currency.cryptoAddresses)
+  @JoinColumn({ name: 'currency', referencedColumnName: 'currency' })
+  currencyEntity: CurrencyEntity;
 
   @CreateDateColumn()
   createdAt: Date;

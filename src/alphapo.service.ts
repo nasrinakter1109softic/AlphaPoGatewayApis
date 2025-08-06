@@ -10,6 +10,7 @@ export class AlphapoService {
   private readonly apiKey: string;
   private readonly apiSecret: string;
   private readonly apiUrl: string;
+  private readonly logger = console; // Replace with a proper logger in production
   constructor(
     private readonly httpService: HttpService,
     private readonly hmacUtil: HmacUtil,
@@ -24,23 +25,58 @@ export class AlphapoService {
   }
 
   private async postToAlphaPo(endpoint: string, data: any): Promise<any> {
-    const signature = this.hmacUtil.generateSignature(data, this.apiSecret);
-    const config: AxiosRequestConfig = {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Processing-Key': this.apiKey,
-        'X-Processing-Signature': signature,
-      },
-    };
-    const url = `${this.apiUrl}${endpoint}`;
-    const response = await this.httpService.post(url, data, config).toPromise();
-    return response?.data;
+    try {
+      const signature = this.hmacUtil.generateSignature(data, this.apiSecret);
+      console.log('Generated Signature:', signature);
+      console.log('Request Data:', data);
+
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Processing-Key': this.apiKey,
+          'X-Processing-Signature': signature,
+        },
+      };
+
+      const url = `${this.apiUrl}${endpoint}`;
+      console.log('Sending Request to:', url);
+      const response = await this.httpService
+        .post(url, data, config)
+        .toPromise();
+
+      console.log('API Response:', response?.data);
+      return response?.data;
+    } catch (error) {
+      console.error(
+        'Error calling AlphaPo API:',
+        error.response?.data || error.message,
+      );
+      throw new Error('AlphaPo API failed');
+    }
   }
-  async createDepositAddress(foreignId: string, currency: string) {
-    return this.postToAlphaPo('/api/v2/addresses/take', {
-      foreign_id: foreignId,
-      currency,
-    });
+  async createDepositAddress(
+    foreignId: string,
+    currency: string,
+    convertTo?: string,
+  ): Promise<any> {
+    try {
+      console.log({ foreignId, currency, convertTo });
+      if (convertTo) {
+        console.log('convertTo', convertTo);
+        return this.postToAlphaPo('/api/v2/addresses/take', {
+          foreign_id: foreignId,
+          currency,
+          convert_to: convertTo,
+        });
+      }
+      return this.postToAlphaPo('/api/v2/addresses/take', {
+        foreign_id: foreignId,
+        currency,
+      });
+    } catch (error) {
+      console.error('Error in createDepositAddress:', error.message);
+      throw new Error('Failed to create crypto address');
+    }
   }
   async getFuturesRates(body: any) {
     return this.postToAlphaPo('/api/v2/futures/rates', body);
