@@ -29,6 +29,7 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './auth/strategies/refresh.strategy';
 import { EmailService } from './common/services/email.service';
 import { AppController } from './app.controller';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { AppController } from './app.controller';
     PermissionModule,
     AuthModule,
     RedisModule,
+    OtpModule,
   ],
   controllers: [AlphapoController, AppController, BalanceController],
   providers: [

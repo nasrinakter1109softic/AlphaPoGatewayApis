@@ -2,10 +2,12 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsBoolean,
-  IsNumber,
   IsUrl,
+  IsPhoneNumber,
+  IsIn,
 } from 'class-validator';
+import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
+
 
 export class CreateCompanyDto {
   @IsString()
@@ -17,15 +19,19 @@ export class CreateCompanyDto {
   @IsString()
   password: string;
 
-  @IsOptional()
-  @IsString()
-  phone?: string;
+  @IsPhoneNumber()
+  phone: string;
 
   @IsString()
   country: string;
 
   @IsString()
   businessName: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['PHONE', 'EMAIL'],{message: 'SendOtpType must be either Phone or email'})
+  sendOtpType?: SendOtpType;
 
   @IsOptional()
   @IsUrl()

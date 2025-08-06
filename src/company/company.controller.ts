@@ -18,8 +18,9 @@ export class CompanyController {
 
   @Post()
   create(@Body() dto: CreateCompanyDto, @Req() req: any) {
+    const { sendOtpType, ...rest } = dto;
     const isSuperAdmin = this.extractIsSuperAdmin(req?.headers?.authorization);
-    return this.companyService.create(dto, isSuperAdmin);
+    return this.companyService.create(rest, isSuperAdmin, sendOtpType);
   }
 
   @Get()

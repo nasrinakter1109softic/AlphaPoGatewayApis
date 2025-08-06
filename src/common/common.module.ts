@@ -26,6 +26,7 @@ import { EmailService } from './services/email.service';
     ResponseHelper,
     PermissionCacheService,
     SmsService,
+    EmailService,
   ],
 })
 export class CommonModule {}
