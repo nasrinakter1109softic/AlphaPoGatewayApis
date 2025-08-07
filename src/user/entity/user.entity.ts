@@ -7,11 +7,13 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { UserType } from 'src/common/enums/user-type.enum';
 import { UserStatus } from 'src/common/enums/user-status';
 import { Roles } from 'src/role/entity/role.entity';
 import { Company } from 'src/company/entity/company.entity';
+import { RefreshToken } from 'src/auth/refreshToken/refresh-token.entity';
 
 @Entity('users')
 export class User {
@@ -47,6 +49,10 @@ export class User {
   @OneToOne(() => Company, (company) => company.user, { nullable: true })
   @JoinColumn()
   company: Company;
+
+  @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
+  @JoinColumn()
+  refreshTokens: RefreshToken[];
 
   @Column({ nullable: true })
   companyId: number;

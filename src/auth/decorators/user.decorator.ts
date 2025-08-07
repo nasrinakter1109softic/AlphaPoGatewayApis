@@ -9,6 +9,8 @@ export const User = createParamDecorator(
       role: request.user.role,
       email: request.user.email,
       phone: request.user?.phone,
+      userType: request.user.userType,
+      companyId: request.user?.companyId,
     };
   },
 );

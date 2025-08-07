@@ -1,12 +1,10 @@
-// src/common/interceptors/response.interceptor.ts
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor,
-  BadRequestException,
 } from '@nestjs/common';
-import { Observable, map, catchError, throwError } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Request } from 'express';
 import { ResponseHelper } from '../helpers/response.helper';
 
