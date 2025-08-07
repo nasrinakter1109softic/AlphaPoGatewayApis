@@ -20,12 +20,10 @@ export class DepositController {
     @Body() body: CreateCryptoAddressDto,
     @User() user: any,
   ) {
-    console.log('User:', user); // Ensure user info is coming properly
     const response = await this.depositService.createAddressForUser(
       body,
       user.userId,
     );
-    console.log('Address Creation Response:', response); // Check API response
     return response;
   }
 }

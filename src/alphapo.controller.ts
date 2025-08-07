@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Body, Controller, Post, Headers } from '@nestjs/common';
 import { AlphapoService } from './alphapo.service';
 

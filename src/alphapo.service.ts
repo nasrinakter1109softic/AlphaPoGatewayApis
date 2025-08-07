@@ -60,9 +60,7 @@ export class AlphapoService {
     convertTo?: string,
   ): Promise<any> {
     try {
-      console.log({ foreignId, currency, convertTo });
       if (convertTo) {
-        console.log('convertTo', convertTo);
         return this.postToAlphaPo('/api/v2/addresses/take', {
           foreign_id: foreignId,
           currency,

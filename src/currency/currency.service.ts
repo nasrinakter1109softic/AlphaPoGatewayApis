@@ -15,11 +15,6 @@ export class CurrencyService {
   async syncFromAlphaPo(): Promise<void> {
     const currencies = await this.alphapoService.getCurrenciesList();
     const data = currencies.data || [];
-    console.log(
-      'Syncing currencies from AlphaPo:',
-      currencies.data.length,
-      'currencies found',
-    );
     for (const c of data) {
       await this.currencyRepo.upsert(
         {
