@@ -7,6 +7,8 @@ import { User } from 'src/user/entity/user.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
 import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
+import { UserType } from 'src/common/enums/user-type.enum';
 
 @Injectable()
 export class DepositService {
@@ -74,7 +76,21 @@ export class DepositService {
 
     return addressData;
   }
-  async getDepositList(queryOptions: any) {
+  /**
+   * Retrieves a paginated list of deposits with filters and relations.
+   * @param queryOptions The query options (pagination, filters, search, etc.)
+   * @param user The authenticated user (for merchant-specific filtering)
+   * @returns A paginated result with nested deposit items
+   */
+  async getDepositList(queryOptions: GenericQueryDto, user: any) {
+    // Add companyId filter for merchant users
+    if (user.userType === UserType.MERCHANT) {
+      if (!user.companyId) {
+        throw new Error('Company ID not found for merchant user');
+      }
+      queryOptions.filters = queryOptions.filters || {};
+      queryOptions.filters.companyId = user.companyId.toString();
+    }
     const result = await this.genericQueryService.query(
       this.depositRepo,
       'd',
@@ -84,20 +100,14 @@ export class DepositService {
         searchableColumns: ['currencySent', 'currencyReceived'],
         defaultOrder: { column: 'createdAt', direction: 'DESC' },
         relations: ['cryptoAddress', 'company', 'fees'],
-        // excludedFields: [
-        //   'crypto_address_id',
-        //   'amount_minus_fee',
-        //   'raw',
-        //   'fees.amount',
-        // ],
+        excludedFields: [
+          'crypto_address_id',
+          'amount_minus_fee',
+          'raw',
+          'fees.amount',
+        ],
       },
-      // selectFields,
-      // [
-      //   'd.id AS id',
-      //   'd.status AS status',
-      //   'd.createdAt AS createdAt',
-      //   'd.updatedAt AS updatedAt',
-      // ],
+      [], // Nested response
     );
     return result;
   }

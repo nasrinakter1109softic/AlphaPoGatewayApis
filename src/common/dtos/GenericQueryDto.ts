@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsObject } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 export class GenericQueryDto {
   @IsOptional()
@@ -31,7 +31,7 @@ export class GenericQueryDto {
   dateTo?: Date;
 
   // any other filters (dynamic)
+  @Transform(({ value }) => JSON.parse(value))
   @IsOptional()
-  @IsObject()
-  filters?: Record<string, string>;
+  filters?: any;
 }

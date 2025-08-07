@@ -86,6 +86,7 @@ export class GenericQueryService {
 
     // Apply selectFields for flat response
     if (selectFields.length > 0) {
+      console.log('selectFields', selectFields); // Debug: Log select fields
       qb.select(selectFields.map((field) => `${field}`));
     }
 
@@ -237,7 +238,7 @@ export class GenericQueryService {
   }
 
   /**
-   * Applies flat filters to the query builder.
+   * Applies flat filters to the query builder, supporting string and number values.
    * @param qb The TypeORM query builder
    * @param alias The table alias
    * @param filters The filters to apply (key-value pairs)
@@ -252,7 +253,14 @@ export class GenericQueryService {
       if (value === null) {
         qb.andWhere(`${alias}.${key} IS NULL`);
       } else {
-        qb.andWhere(`${alias}.${key} = :${paramKey}`, { [paramKey]: value });
+        // Handle number filters (e.g., companyId)
+        const paramValue =
+          typeof value === 'string' && !isNaN(Number(value))
+            ? Number(value)
+            : value;
+        qb.andWhere(`${alias}.${key} = :${paramKey}`, {
+          [paramKey]: paramValue,
+        });
       }
     }
   }

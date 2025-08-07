@@ -11,8 +11,9 @@ export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
   @Get()
-  async getDepositList(@Query() query: GenericQueryDto) {
-    return await this.depositService.getDepositList(query);
+  async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
+    console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
+    return this.depositService.getDepositList(queryOptions, user);
   }
 
   @Post('createAddress')
