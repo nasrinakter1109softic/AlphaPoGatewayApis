@@ -22,8 +22,6 @@ export class DepositService {
   ) {}
   async createAddressForUser(data: CreateCryptoAddressDto, userId: number) {
     const { currency, convertTo } = data;
-    console.log('Creating address for:', { userId, currency, convertTo });
-
     // Step 1: Find user and company
     const user = await this.userRepo.findOne({
       where: { userId: userId },
@@ -42,7 +40,6 @@ export class DepositService {
     });
 
     if (existingAddress) {
-      console.log('Existing address found:', existingAddress);
       return existingAddress; // Return existing address if found
     }
 

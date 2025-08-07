@@ -29,7 +29,6 @@ export class SmsService {
     };
 
     try {
-      console.log('Sending SMS with payload:', payload);
       const { data } = await firstValueFrom(
         this.httpService.post(this.smsConfig.url, payload),
       );

@@ -86,7 +86,6 @@ export class GenericQueryService {
 
     // Apply selectFields for flat response
     if (selectFields.length > 0) {
-      console.log('selectFields', selectFields); // Debug: Log select fields
       qb.select(selectFields.map((field) => `${field}`));
     }
 

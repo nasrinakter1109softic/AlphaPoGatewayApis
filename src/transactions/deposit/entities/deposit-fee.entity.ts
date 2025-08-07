@@ -17,7 +17,6 @@ export class DepositFee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // eslint-disable-next-line prettier/prettier
   @ManyToOne(() => Deposit, (d) => d.fees, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'depositId' })
   deposit: Deposit;
@@ -26,7 +25,7 @@ export class DepositFee {
   depositId: number;
 
   @Column({ length: 32 })
-  type: string; // e.g. "deposit"
+  type: string;
 
   @Column({ length: 20 })
   currency: string;
