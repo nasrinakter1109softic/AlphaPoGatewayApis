@@ -21,6 +21,7 @@ import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
 import { GenericQueryService } from 'src/common/services/generic-query.service';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CompanyStatus } from 'src/common/enums/company-status';
 
 @Injectable()
 export class CompanyService {
@@ -75,6 +76,7 @@ export class CompanyService {
         phone,
         ...rest,
         isAdminCreated: isSuperAdmin ? true : false,
+        isOtpVerified: isSuperAdmin ? true : false,
         user: savedUser,
       });
 
@@ -154,17 +156,18 @@ export class CompanyService {
     return company;
   }
 
-  async approveCompany(id: number, status:UserStatus): Promise<Company> {
+  async approveCompany(id: number): Promise<Company> {
     const company = await this.companyRepo.findOne({
       where: { companyId: id },
-      relations: ['user', 'balances'],
+      relations: ['user'],
     });
     if (!company) throw new NotFoundException('Company not found');
-    // const { ststus: currentStatus } = 
-    // if (company.user) {
-    //   company.user.userStatus = status.toUpperCase() as UserStatus;
-    //   await this.userRepo.save(company.user);
-    // }
+    company.status = CompanyStatus.APPROVED;
+    if (company.user) {
+      company.user.isActive = true;
+      company.user.userStatus = UserStatus.ACTIVE;
+      await this.userRepo.save(company.user);
+    }
     return company;
   }
 

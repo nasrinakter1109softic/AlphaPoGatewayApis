@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   Query,
   Put,
-  Patch
+  Patch,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CompanyService } from './company.service';
@@ -40,9 +40,8 @@ export class CompanyController {
   }
 
   @Patch(':id/approve')
-  approveCompany(@Param('id') id: string, @Body() status: UserStatus) {
-    console.log('Approving company with ID:', id, 'Status:', status);
-    return this.companyService.approveCompany(+id,status);
+  approveCompany(@Param('id') id: string) {
+    return this.companyService.approveCompany(+id);
   }
 
   @Delete(':id')

@@ -1,4 +1,5 @@
 import { Balance } from 'src/balance/entity/balance.entity';
+import { CompanyStatus } from 'src/common/enums/company-status';
 import { User } from 'src/user/entity/user.entity'; // Correct the path
 import {
   Entity,
@@ -30,6 +31,15 @@ export class Company {
 
   @Column()
   businessName: string;
+
+  @Column({ nullable: true })
+  approvedBy: string;
+
+  @Column({ default: CompanyStatus.PENDING })
+  status: string;
+
+  @Column({ default: false })
+  isOtpVerified: boolean;
 
   @Column({ nullable: true })
   kycDocument?: string;
