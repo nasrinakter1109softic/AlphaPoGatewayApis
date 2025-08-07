@@ -1,4 +1,5 @@
 import { Balance } from 'src/balance/entity/balance.entity';
+import { CompanyStatus } from 'src/common/enums/company-status';
 import { Deposit } from 'src/transactions/deposit/entities/deposit.entity';
 import { Withdrawal } from 'src/transactions/withdraw/entities/withdrawal.entity';
 import { User } from 'src/user/entity/user.entity'; // Correct the path
@@ -32,6 +33,15 @@ export class Company {
 
   @Column()
   businessName: string;
+
+  @Column({ nullable: true })
+  approvedBy: number;
+
+  @Column({ default: CompanyStatus.PENDING })
+  status: string;
+
+  @Column({ default: false })
+  isOtpVerified: boolean;
 
   @Column({ nullable: true })
   kycDocument?: string;
