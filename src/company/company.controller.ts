@@ -19,16 +19,26 @@ import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { User } from 'src/auth/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateCompanyDto, @Req() req: any) {
+  create(
+    @User('user') user: any,
+    @Body() dto: CreateCompanyDto,
+    @Req() req: any,
+  ) {
     const { sendOtpType, ...rest } = dto;
-    const isSuperAdmin = this.extractIsSuperAdmin(req?.headers?.authorization);
-    return this.companyService.create(rest, isSuperAdmin, sendOtpType);
+    console.log('User from decorator:', user);
+    // const isSuperAdmin = this.extractIsSuperAdmin(req?.headers?.authorization);
+    const isSuperAdmin = user?.role?.roleName === 'SUPER_ADMIN' ? true : false;
+    const adminInfo = { isSuperAdmin, userId: user?.userId };
+    return this.companyService.create(rest, adminInfo, sendOtpType);
   }
 
   @Get()
@@ -58,7 +68,7 @@ export class CompanyController {
     return this.companyService.update(+id, dto);
   }
 
-  // 🔒 Utility: Extracts and checks if the user is SUPER_ADMIN
+  // Utility: Extracts and checks if the user is SUPER_ADMIN
   private extractIsSuperAdmin(authHeader: string | undefined): boolean {
     const token = authHeader?.split(' ')[1];
     try {
@@ -68,5 +78,10 @@ export class CompanyController {
     } catch (error) {
       throw new UnauthorizedException('Failed to decode token');
     }
+  }
+
+  @Post('verify-otp')
+  verifyOtp(@Body() body: VerifyOtpDto) {
+    return this.companyService.verifyOtp(body);
   }
 }

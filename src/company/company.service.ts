@@ -22,6 +22,7 @@ import { GenericQueryService } from 'src/common/services/generic-query.service';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyStatus } from 'src/common/enums/company-status';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Injectable()
 export class CompanyService {
@@ -38,10 +39,11 @@ export class CompanyService {
   ) {}
   async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
-    isSuperAdmin: boolean,
+    adminInfo: any,
     sendOtpType: SendOtpType,
   ): Promise<{ message: string }> {
     const { name, email, phone, password, ...rest } = createCompanyDto;
+    const { isSuperAdmin, userId } = adminInfo;
     try {
       const [existingCompany, existingUser] = await Promise.all([
         this.companyRepo.findOne({ where: [{ name }, { email }] }),
@@ -77,10 +79,14 @@ export class CompanyService {
         ...rest,
         isAdminCreated: isSuperAdmin ? true : false,
         isOtpVerified: isSuperAdmin ? true : false,
+        status: isSuperAdmin ? CompanyStatus.APPROVED : CompanyStatus.PENDING,
+        approvedBy: isSuperAdmin ? userId : null,
         user: savedUser,
       });
 
       await this.companyRepo.save(company);
+      user.companyId = company.companyId;
+      await this.userRepo.save(user);
 
       let message = 'Company created successfully';
       //  Generate + Send OTP if not SUPER_ADMIN
@@ -161,7 +167,7 @@ export class CompanyService {
     userId: number,
   ): Promise<{ message: string }> {
     const company = await this.companyRepo.findOne({
-      where: { companyId: id },
+      where: { companyId: id, isOtpVerified: true },
       relations: ['user'],
     });
     if (!company) throw new NotFoundException('Company not found');
@@ -198,5 +204,52 @@ export class CompanyService {
     return {
       message: `Company with ${company.companyId} deleted successfully`,
     };
+  }
+
+  async verifyOtp(dto: VerifyOtpDto): Promise<{ message: string }> {
+    const { userId, code } = dto;
+
+    const user = await this.userRepo.findOne({
+      where: { userId },
+      relations: ['otp'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const otp = await this.otpRepo.findOne({
+      where: { code },
+    });
+
+    if (!otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    if (otp.isUsed) {
+      throw new BadRequestException('OTP already used');
+    }
+
+    if (new Date(otp.expireAt) < new Date()) {
+      throw new BadRequestException(
+        'OTP has expired. PLease request a new one',
+      );
+    }
+
+    const company = await this.companyRepo.findOne({
+      where: { user: { userId } },
+      relations: ['user'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found for this user');
+    }
+
+    otp.isUsed = true;
+    await this.otpRepo.save(otp);
+    company.isOtpVerified = true;
+    await this.companyRepo.save(company);
+
+    return { message: 'OTP verified successfully. Account activated.' };
   }
 }
