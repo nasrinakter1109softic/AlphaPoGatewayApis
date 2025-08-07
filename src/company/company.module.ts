@@ -5,9 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Company } from './entity/company.entity';
 import { User } from 'src/user/entity/user.entity';
 import { Balance } from 'src/balance/entity/balance.entity';
+import { CommonModule } from 'src/common/common.module';
+import { Otp } from 'src/otp/entity/otp.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Company, User, Balance])],
+  imports: [
+    TypeOrmModule.forFeature([Company, User, Balance, Otp]),
+    CommonModule,
+  ],
+
   controllers: [CompanyController],
   providers: [CompanyService],
 })

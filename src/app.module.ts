@@ -20,6 +20,7 @@ import { GenericQueryService } from './common/services/generic-query.service';
 import { UserModule } from './user/user.module';
 import { CompanyModule } from './company/company.module';
 import { PermissionModule } from './permission/permission.module';
+import { BalanceController } from './balance/balance.controller';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -28,8 +29,8 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './auth/strategies/refresh.strategy';
 import { EmailService } from './common/services/email.service';
 import { AppController } from './app.controller';
+import { OtpModule } from './otp/otp.module';
 import { CurrencyModule } from './currency/currency.module';
-import { BalanceController } from './balance/balance.controller';
 import { BalanceModule } from './balance/balance.module';
 
 @Module({
@@ -67,6 +68,7 @@ import { BalanceModule } from './balance/balance.module';
     PermissionModule,
     AuthModule,
     RedisModule,
+    OtpModule,
     CurrencyModule,
     BalanceModule,
   ],
@@ -82,6 +84,6 @@ import { BalanceModule } from './balance/balance.module';
     RefreshTokenStrategy,
     EmailService,
   ],
-  exports: [AlphapoService, ResponseInterceptor, CommonModule, EmailService],
+  exports: [AlphapoService, ResponseInterceptor, CommonModule],
 })
 export class AppModule {}

@@ -12,6 +12,17 @@ import { UserType } from 'src/common/enums/user-type.enum';
 import { UserStatus } from 'src/common/enums/user-status';
 import { CreateCompanyDto } from './dto/create-company';
 import { HashUtil } from 'src/common/utils/hash.util';
+import { EmailService } from 'src/common/services/email.service';
+import { SmsService } from 'src/common/services/sms.service';
+import { SendMailDto } from 'src/common/dtos/send-mail.dto';
+import { Otp } from 'src/otp/entity/otp.entity';
+import { OtpUtil } from 'src/common/utils/otp.util';
+import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
+import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CompanyStatus } from 'src/common/enums/company-status';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Injectable()
 export class CompanyService {
@@ -20,55 +31,20 @@ export class CompanyService {
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Otp)
+    private readonly otpRepo: Repository<Otp>,
+    private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
+    private readonly genericQuery: GenericQueryService,
   ) {}
-
-  //   async create(createCompanyDto: CreateCompanyDto){
-  //     const { name, email, phone, password } = createCompanyDto;
-
-  //     // Check if company already exists
-  //     const existingCompany = await this.companyRepo.findOne({
-  //       where: [{ name }, { email }],
-  //     });
-
-  //     if (existingCompany) {
-  //       throw new BadRequestException('Company name or email already exists');
-  //     }
-
-  //     // Check if user with the same email or phone already exists
-  //     const existingUser = await this.userRepo.findOne({
-  //       where: [{ email }, { phone }],
-  //     });
-  //     if (existingUser) {
-  //       throw new BadRequestException(
-  //         'User with this email or phone already exists',
-  //       );
-  //     }
-  //     // hash password
-  //     const hashedPassword = await HashUtil.hashPassword(password);
-  //     // Create linked user
-  //     const user = this.userRepo.create({
-  //       email,
-  //       phone,
-  //       password: hashedPassword,
-  //       userType: UserType.COMPANY,
-  //       userStatus: UserStatus.PENDING,
-  //       isActive: true,
-  //     });
-  //     const savedUser = await this.userRepo.save(user);
-
-  //     const company = this.companyRepo.create({
-  //       ...createCompanyDto,
-  //       user: savedUser,
-  //     });
-  //     this.companyRepo.save(company);
-  //     return { message: 'Company created successfully' };
-  //   }
-
-  async create(createCompanyDto: CreateCompanyDto) {
+  async create(
+    createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
+    adminInfo: any,
+    sendOtpType: SendOtpType,
+  ): Promise<{ message: string }> {
     const { name, email, phone, password, ...rest } = createCompanyDto;
-
+    const { isSuperAdmin, userId } = adminInfo;
     try {
-      //  Check for duplicate company
       const [existingCompany, existingUser] = await Promise.all([
         this.companyRepo.findOne({ where: [{ name }, { email }] }),
         this.userRepo.findOne({ where: [{ email }, { phone }] }),
@@ -83,44 +59,95 @@ export class CompanyService {
           'User with this email or phone already exists',
         );
       }
-
-      // 🔐 Hash password
+      // Generate Hash password
       const hashedPassword = await HashUtil.hashPassword(password);
-
-      // 👤 Create and persist user
+      //  Create new user
       const user = this.userRepo.create({
         email,
         phone,
         password: hashedPassword,
         userType: UserType.MERCHANT,
-        userStatus: UserStatus.PENDING,
-        isActive: true,
+        userStatus: isSuperAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
+        isActive: isSuperAdmin,
       });
-
       const savedUser = await this.userRepo.save(user);
-
-      // 🏢 Create and persist company
+      //  Create new company
       const company = this.companyRepo.create({
         name,
         email,
         phone,
         ...rest,
+        isAdminCreated: isSuperAdmin ? true : false,
+        isOtpVerified: isSuperAdmin ? true : false,
+        status: isSuperAdmin ? CompanyStatus.APPROVED : CompanyStatus.PENDING,
+        approvedBy: isSuperAdmin ? userId : null,
         user: savedUser,
       });
 
       await this.companyRepo.save(company);
+      user.companyId = company.companyId;
+      await this.userRepo.save(user);
 
-      return { message: 'Company created successfully' };
+      let message = 'Company created successfully';
+      //  Generate + Send OTP if not SUPER_ADMIN
+      if (!isSuperAdmin) {
+        const otpCode = OtpUtil.generateOtp();
+        const otpExpiry = OtpUtil.getExpiry();
+
+        // Save OTP (overwrite if already exists for user)
+        await this.otpRepo.save({
+          code: otpCode,
+          expireAt: otpExpiry.toISOString(),
+          used: false,
+          user: savedUser,
+          userId: savedUser.userId,
+        });
+
+        //  Send OTP
+        if (sendOtpType === SendOtpType.EMAIL) {
+          const payload: SendMailDto = {
+            to: email,
+            subject: 'Your OTP for AlphaPo Registration',
+            html: `
+              <p>Hi ${name},</p>
+              <p>Your OTP is: <strong>${otpCode}</strong></p>
+              <p>This code will expire in 10 minutes.</p>
+            `,
+          };
+
+          await this.emailService.sendMail(
+            payload.to,
+            payload.subject,
+            payload.html,
+          );
+          message += '. Verification OTP sent via email.';
+        } else if (sendOtpType === SendOtpType.PHONE) {
+          await this.smsService.sendSms(
+            phone,
+            `Welcome to AlphaPo. Your OTP is: ${otpCode}. It will expire in 10 minutes.`,
+          );
+          message += '. Verification OTP sent via SMS.';
+        } else {
+          throw new BadRequestException('Invalid OTP send type');
+        }
+      }
+
+      return { message };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
 
-      console.error('❌ Company creation failed:', error);
+      console.error('Company creation failed:', error);
       throw new InternalServerErrorException('Failed to create company');
     }
   }
 
-  async findAll(): Promise<Company[]> {
-    return this.companyRepo.find({ relations: ['user', 'balances'] });
+  async findAll(options: GenericQueryDto) {
+    return this.genericQuery.query(this.companyRepo, 'company', options, {
+      allowedFilterColumns: ['name', 'email', 'phone', 'softDelete'],
+      searchableColumns: ['name', 'email', 'phone'],
+      enforcedFilters: { softDelete: false },
+      relations: ['user', 'balances'],
+    });
   }
 
   async findOne(id: number): Promise<Company> {
@@ -129,18 +156,100 @@ export class CompanyService {
       relations: ['user', 'balances'],
     });
     if (!company) throw new NotFoundException('Company not found');
+    if (company.user) {
+      delete company.user.password;
+    }
     return company;
   }
 
-  //   async update(id: number, dto: UpdateCompanyDto): Promise<Company> {
-  //     const company = await this.findOne(id);
-  //     await this.companyRepo.update(id, dto);
-  //     return this.findOne(id);
-  //   }
+  async approveCompany(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const company = await this.companyRepo.findOne({
+      where: { companyId: id, isOtpVerified: true },
+      relations: ['user'],
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    company.status = CompanyStatus.APPROVED;
+    if (company.user) {
+      company.user.isActive = true;
+      company.approvedBy = userId;
+      company.user.userStatus = UserStatus.ACTIVE;
+      console.log('Updating user status to ACTIVE', company, userId);
+      await this.companyRepo.save(company);
+      await this.userRepo.save(company.user);
+    }
+    return {
+      message: `Company with ${company.companyId} updated successfully`,
+    };
+  }
 
-  async remove(id: number): Promise<{ success: true }> {
+  async update(id: number, dto: UpdateCompanyDto) {
     const company = await this.findOne(id);
-    await this.companyRepo.remove(company);
-    return { success: true };
+    if (!company) throw new NotFoundException('Company not found');
+    const updatedCompany = await this.companyRepo.update(id, dto);
+    if (!updatedCompany.affected) {
+      throw new BadRequestException('Failed to update company');
+    }
+    return {
+      message: `Company with ${company.companyId} updated successfully`,
+    };
+  }
+
+  async remove(id: number): Promise<{ message: string }> {
+    const company = await this.findOne(id);
+    if (!company) throw new NotFoundException('Company not found');
+    await this.companyRepo.update(+id, { softDelete: true });
+    return {
+      message: `Company with ${company.companyId} deleted successfully`,
+    };
+  }
+
+  async verifyOtp(dto: VerifyOtpDto): Promise<{ message: string }> {
+    const { userId, code } = dto;
+
+    const user = await this.userRepo.findOne({
+      where: { userId },
+      relations: ['otp'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const otp = await this.otpRepo.findOne({
+      where: { code },
+    });
+
+    if (!otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    if (otp.isUsed) {
+      throw new BadRequestException('OTP already used');
+    }
+
+    if (new Date(otp.expireAt) < new Date()) {
+      throw new BadRequestException(
+        'OTP has expired. PLease request a new one',
+      );
+    }
+
+    const company = await this.companyRepo.findOne({
+      where: { user: { userId } },
+      relations: ['user'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found for this user');
+    }
+
+    otp.isUsed = true;
+    await this.otpRepo.save(otp);
+    company.isOtpVerified = true;
+    await this.companyRepo.save(company);
+
+    return { message: 'OTP verified successfully. Account activated.' };
   }
 }
