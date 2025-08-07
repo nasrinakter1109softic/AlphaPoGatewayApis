@@ -11,22 +11,21 @@ import { DecimalTransformer } from 'src/common/db/decimal.transformer';
 
 @Entity('deposit_fees')
 export class DepositFee {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()
   id: number;
 
-  // eslint-disable-next-line prettier/prettier
   @ManyToOne(() => Deposit, (d) => d.fees, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'deposit_id' })
+  @JoinColumn({ name: 'depositId' })
   deposit: Deposit;
 
-  @Column({ name: 'deposit_id' })
+  @Column({ name: 'depositId' })
   depositId: number;
 
   @Column({ length: 32 })
-  type: string; // e.g. "deposit"
+  type: string;
 
   @Column({ length: 20 })
   currency: string;

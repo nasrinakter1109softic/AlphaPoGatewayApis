@@ -19,13 +19,6 @@ export class PermissionCacheService {
     permissions: string[],
     ttlSeconds = 3600,
   ) {
-    console.log(
-      'Setting permissions in cache:',
-      permissions,
-      'for userId:',
-      userId,
-    );
-
     await this.redis.set(
       this.makeKey(userId),
       JSON.stringify(permissions),

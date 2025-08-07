@@ -42,7 +42,6 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.identifier, dto.password);
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    console.log('User found:', user);
     const payload = {
       userId: user.userId,
       email: user.email,

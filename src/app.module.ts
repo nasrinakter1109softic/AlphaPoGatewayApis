@@ -30,6 +30,8 @@ import { RefreshTokenStrategy } from './auth/strategies/refresh.strategy';
 import { EmailService } from './common/services/email.service';
 import { AppController } from './app.controller';
 import { OtpModule } from './otp/otp.module';
+import { CurrencyModule } from './currency/currency.module';
+import { BalanceModule } from './balance/balance.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { OtpModule } from './otp/otp.module';
     AuthModule,
     RedisModule,
     OtpModule,
+    CurrencyModule,
+    BalanceModule,
   ],
   controllers: [AlphapoController, AppController, BalanceController],
   providers: [

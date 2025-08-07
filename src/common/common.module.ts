@@ -10,6 +10,7 @@ import { PermissionCacheService } from './services/permission-cache.service';
 import { HttpModule } from '@nestjs/axios';
 import { SmsService } from './services/sms.service';
 import { EmailService } from './services/email.service';
+import { HmacUtil } from './utils/hmac.util';
 
 @Module({
   imports: [HttpModule, TypeOrmModule.forFeature([Roles, Menu, Permission])],
@@ -20,6 +21,7 @@ import { EmailService } from './services/email.service';
     PermissionCacheService,
     SmsService,
     EmailService,
+    HmacUtil,
   ],
   exports: [
     GenericQueryService,
@@ -27,6 +29,7 @@ import { EmailService } from './services/email.service';
     PermissionCacheService,
     SmsService,
     EmailService,
+    HmacUtil,
   ],
 })
 export class CommonModule {}

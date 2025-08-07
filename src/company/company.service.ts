@@ -156,7 +156,10 @@ export class CompanyService {
     return company;
   }
 
-  async approveCompany(id: number): Promise<Company> {
+  async approveCompany(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
     const company = await this.companyRepo.findOne({
       where: { companyId: id },
       relations: ['user'],
@@ -165,10 +168,15 @@ export class CompanyService {
     company.status = CompanyStatus.APPROVED;
     if (company.user) {
       company.user.isActive = true;
+      company.approvedBy = userId;
       company.user.userStatus = UserStatus.ACTIVE;
+      console.log('Updating user status to ACTIVE', company, userId);
+      await this.companyRepo.save(company);
       await this.userRepo.save(company.user);
     }
-    return company;
+    return {
+      message: `Company with ${company.companyId} updated successfully`,
+    };
   }
 
   async update(id: number, dto: UpdateCompanyDto) {

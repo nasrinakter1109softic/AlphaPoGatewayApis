@@ -13,7 +13,7 @@ import { TxType } from 'src/transactions/deposit/enums/tx-type.enum';
 
 @Entity('withdrawal_transactions')
 export class WithdrawalTransaction {
-  @Column({ name: 'company_id' })
+  @Column({ name: 'companyId' })
   companyId: number;
 
   @PrimaryGeneratedColumn()

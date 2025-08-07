@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('balances')
@@ -13,7 +14,7 @@ export class Balance {
   @PrimaryGeneratedColumn()
   balanceId: number;
 
-  @Column({ length: 3 })
+  @Column()
   currency: string;
 
   @Column({
@@ -25,10 +26,11 @@ export class Balance {
   balance: number;
 
   @ManyToOne(() => Company, (company) => company.balances)
+  @JoinColumn({ name: 'companyId' })
   company: Company;
 
   @Column({ nullable: true })
-  companyId: string;
+  companyId: number;
 
   @CreateDateColumn()
   createdAt: Date;

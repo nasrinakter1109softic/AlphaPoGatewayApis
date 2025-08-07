@@ -1,48 +1,47 @@
 import { Injectable } from '@nestjs/common';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 
-/**
- * Generic, entity-agnostic pagination + filter + (column/jsonb) search service.
- * You can reuse it for ANY table by passing the repository + a small config.
- */
-
 export type OrderDir = 'ASC' | 'DESC';
 
 export interface JsonSearchKey {
-  /** The jsonb column name on the table (e.g. `payload`) */
+  /** The jsonb column name on the table (e.g., `payload`) */
   column: string;
   /** JSON path pieces. Example: ['crypto_address', 'currency'] */
   path: string[];
 }
 
 export interface GenericQueryConfig {
-  /** Which direct columns are allowed to be filtered by `filters` */
+  /** Columns allowed for filtering in `filters` */
   allowedFilterColumns?: string[];
-  /** Which direct columns are searched with the `search` text (ILIKE) */
+  /** Columns searchable with the `search` text (ILIKE) */
   searchableColumns?: string[];
-  /** Which jsonb paths are searchable with the `search` text */
+  /** JSONB paths searchable with the `search` text */
   jsonSearchKeys?: JsonSearchKey[];
-  /** Optional hard filters you always want to inject (e.g., multi-tenant companyId) */
+  /** Hard-coded filters to always apply (e.g., multi-tenant companyId) */
   enforcedFilters?: Record<string, any>;
-  /** Default order map if caller doesn't pass orderBy/orderDir */
+  /** Default ordering if orderBy/orderDir is not provided */
   defaultOrder?: { column: string; direction: OrderDir };
+  /** Relations to include in the query (e.g., ['company', 'company as c']) */
   relations?: string[];
+  /** Fields to exclude from the main table and relations (supports dot notation, e.g., 'fees.amount') */
+  excludedFields?: string[];
 }
 
 export interface GenericQueryOptions {
   page?: number;
   limit?: number;
-  /** Free-text search */
+  /** Free-text search term */
   search?: string;
-  /** Dynamic filters on flat columns (must be whitelisted in config.allowedFilterColumns) */
+  /** Dynamic filters on flat columns (must be in allowedFilterColumns) */
   filters?: Record<string, any>;
-  /** Order by a flat column (must be in allowedFilterColumns or searchableColumns ideally) */
+  /** Column to order by (ideally in allowedFilterColumns or searchableColumns) */
   orderBy?: string;
+  /** Order direction (ASC or DESC) */
   orderDir?: OrderDir;
-  /** Optional date range filtering on a timestamp column */
+  /** Date range filtering on a timestamp column */
   dateFrom?: string | Date;
   dateTo?: string | Date;
-  dateColumn?: string; // default createdAt
+  dateColumn?: string; // defaults to createdAt
 }
 
 export interface PagedResult<T> {
@@ -55,25 +54,47 @@ export interface PagedResult<T> {
 
 @Injectable()
 export class GenericQueryService {
+  /**
+   * Executes a paginated query with support for flat or nested responses and excludes specified fields.
+   * @param repo The TypeORM repository for the entity
+   * @param alias The table alias (e.g., 'd' for deposits)
+   * @param opts Query options (pagination, filters, search, etc.)
+   * @param cfg Query configuration (allowed columns, relations, excluded fields, etc.)
+   * @param selectFields Specific fields to select for flat response (e.g., ['d.id AS id', 'company.name AS company_name'])
+   * @returns A paginated result with flat or nested items, total count, and pagination metadata
+   */
   async query<T extends object>(
     repo: Repository<T>,
     alias: string,
     opts: GenericQueryOptions = {},
     cfg: GenericQueryConfig = {},
-  ): Promise<PagedResult<T>> {
+    selectFields: string[] = [],
+  ): Promise<PagedResult<any>> {
     const page = Number(opts.page ?? 1);
     const limit = Math.min(Number(opts.limit ?? 20), 100);
     const qb = repo.createQueryBuilder(alias);
+
+    // Handle relations (with and without aliases)
+    const relationAliases: Record<string, string> = {};
     (cfg.relations ?? []).forEach((relation) => {
-      qb.leftJoinAndSelect(`${alias}.${relation}`, relation);
+      const [relationName, relationAlias] = relation.includes(' as ')
+        ? relation.split(' as ').map((s) => s.trim())
+        : [relation, relation];
+      qb.leftJoinAndSelect(`${alias}.${relationName}`, relationAlias);
+      relationAliases[relationName] = relationAlias;
     });
 
-    // Inject enforced filters first (e.g., companyId)
+    // Apply selectFields for flat response
+    if (selectFields.length > 0) {
+      qb.select(selectFields.map((field) => `${field}`));
+    }
+
+    // Apply enforced filters (e.g., multi-tenant companyId)
     if (cfg.enforcedFilters) {
       this.applyFlatFilters(qb, alias, cfg.enforcedFilters);
     }
 
-    // User supplied filters (only allowed ones)
+    // Apply user-provided filters (only allowed columns)
     if (opts.filters) {
       const allowed = new Set(cfg.allowedFilterColumns ?? []);
       const safeFilters: Record<string, any> = {};
@@ -85,7 +106,7 @@ export class GenericQueryService {
       this.applyFlatFilters(qb, alias, safeFilters);
     }
 
-    // Date range filter (common use-case)
+    // Apply date range filter
     if (opts.dateFrom || opts.dateTo) {
       const col = opts.dateColumn ?? 'createdAt';
       if (opts.dateFrom) {
@@ -98,19 +119,18 @@ export class GenericQueryService {
       }
     }
 
-    // Search (both flat & json)
+    // Apply search (flat columns and JSONB paths)
     if (opts.search) {
       const params: Record<string, any> = { s: `%${opts.search}%` };
       const parts: string[] = [];
 
-      // flat columns
+      // Search flat columns
       (cfg.searchableColumns ?? []).forEach((col) => {
         parts.push(`${alias}."${col}"::text ILIKE :s`);
       });
 
-      // json paths
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      (cfg.jsonSearchKeys ?? []).forEach((j, i) => {
+      // Search JSONB paths
+      (cfg.jsonSearchKeys ?? []).forEach((j) => {
         const jsonExpr = `${alias}.${j.column} #>> '{${j.path.join(',')}}' ILIKE :s`;
         parts.push(jsonExpr);
       });
@@ -120,7 +140,7 @@ export class GenericQueryService {
       }
     }
 
-    // Ordering
+    // Apply ordering
     if (opts.orderBy) {
       qb.orderBy(`${alias}.${opts.orderBy}`, opts.orderDir ?? 'DESC');
     } else if (cfg.defaultOrder) {
@@ -132,19 +152,96 @@ export class GenericQueryService {
       qb.orderBy(`${alias}.createdAt`, 'DESC');
     }
 
+    // Apply pagination
     qb.skip((page - 1) * limit).take(limit);
 
-    const [items, total] = await qb.getManyAndCount();
-    return {
-      items,
-      total,
-      page,
-      pageSize: limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    // Execute query and fetch results
+    console.log('Generated SQL:', qb.getSql()); // Debug: Log generated SQL
+    try {
+      if (selectFields.length > 0) {
+        // Use getRawMany for flat response when selectFields is provided
+        const [rawItems, total] = await Promise.all([
+          qb.getRawMany(),
+          qb.getCount(),
+        ]);
+        return {
+          items: rawItems,
+          total,
+          page,
+          pageSize: limit,
+          totalPages: Math.ceil(total / limit),
+        };
+      } else {
+        // Use getMany for nested response when selectFields is not provided
+        const [items, total] = await Promise.all([qb.getMany(), qb.getCount()]);
+
+        // Filter out excludedFields from main entity and relations, supporting dot notation
+        const filteredItems = items.map((item) => {
+          const filteredItem = { ...item };
+
+          // Handle excluded fields for main entity
+          (cfg.excludedFields ?? []).forEach((field) => {
+            // Check if field is for main entity (no dot notation)
+            if (!field.includes('.')) {
+              delete filteredItem[field];
+            }
+          });
+
+          // Handle excluded fields for relations
+          (cfg.relations ?? []).forEach((relation) => {
+            const [relationName] = relation.includes(' as ')
+              ? relation.split(' as ').map((s) => s.trim())
+              : [relation];
+            if (filteredItem[relationName]) {
+              // Handle dot notation for relation fields (e.g., 'fees.amount')
+              const relationExcludedFields = (cfg.excludedFields ?? [])
+                .filter((field) => field.startsWith(`${relationName}.`))
+                .map((field) => field.split('.')[1]);
+
+              if (Array.isArray(filteredItem[relationName])) {
+                // Handle one-to-many relations (e.g., fees)
+                filteredItem[relationName] = filteredItem[relationName].map(
+                  (relItem: any) => {
+                    const filteredRelItem = { ...relItem };
+                    relationExcludedFields.forEach((field) => {
+                      delete filteredRelItem[field];
+                    });
+                    return filteredRelItem;
+                  },
+                );
+              } else {
+                // Handle many-to-one relations (e.g., company, cryptoAddress)
+                const filteredRelItem = { ...filteredItem[relationName] };
+                relationExcludedFields.forEach((field) => {
+                  delete filteredRelItem[field];
+                });
+                filteredItem[relationName] = filteredRelItem;
+              }
+            }
+          });
+
+          return filteredItem;
+        });
+
+        return {
+          items: filteredItems,
+          total,
+          page,
+          pageSize: limit,
+          totalPages: Math.ceil(total / limit),
+        };
+      }
+    } catch (error) {
+      throw new Error(`Query failed: ${error.message}`);
+    }
   }
 
-  // ---------------- private helpers ----------------
+  /**
+   * Applies flat filters to the query builder.
+   * @param qb The TypeORM query builder
+   * @param alias The table alias
+   * @param filters The filters to apply (key-value pairs)
+   */
   private applyFlatFilters<T extends object>(
     qb: SelectQueryBuilder<T>,
     alias: string,
@@ -160,69 +257,3 @@ export class GenericQueryService {
     }
   }
 }
-
-/* ---------------------------
- * Usage Examples
- * ---------------------------
-
-// 1) CallbackLog (with json payload search) -----------------
-const result = await genericQueryService.query(
-  callbackLogRepo,
-  'log',
-  {
-    page: 1,
-    limit: 20,
-    search: 'btc',
-    filters: { provider: 'alphapo', companyId: 10 },
-    orderBy: 'createdAt',
-    orderDir: 'DESC',
-  },
-  {
-    allowedFilterColumns: ['provider', 'status', 'companyId', 'eventType'],
-    searchableColumns: ['provider', 'eventType', 'status'],
-    jsonSearchKeys: [
-      { column: 'payload', path: ['txid'] },
-      { column: 'payload', path: ['crypto_address', 'address'] },
-      { column: 'payload', path: ['currency_sent', 'currency'] },
-    ],
-    enforcedFilters: { companyId: 10 }, // pulled from auth context
-    defaultOrder: { column: 'createdAt', direction: 'DESC' },
-  },
-);
-
-// 2) Deposits (no json search) -------------------------------
-const deposits = await genericQueryService.query(
-  depositRepo,
-  'd',
-  {
-    page: 1,
-    search: 'BTC',
-    filters: { status: 'confirmed', companyId: 10 },
-    dateFrom: '2025-07-01',
-    dateTo: '2025-07-28',
-  },
-  {
-    allowedFilterColumns: ['status', 'companyId', 'currencyReceived'],
-    searchableColumns: ['currencySent', 'currencyReceived'],
-    defaultOrder: { column: 'createdAt', direction: 'DESC' },
-  },
-);
-
-// 3) Withdrawals (search on flat columns only) ---------------
-const withdrawals = await genericQueryService.query(
-  withdrawalRepo,
-  'w',
-  {
-    page: 2,
-    limit: 50,
-    search: 'failed',
-    filters: { companyId: 10 },
-    orderBy: 'status',
-  },
-  {
-    allowedFilterColumns: ['companyId', 'status'],
-    searchableColumns: ['status', 'currency'],
-  },
-);
-
-*/

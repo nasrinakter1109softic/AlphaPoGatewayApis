@@ -15,6 +15,7 @@ import { WithdrawalStatus } from '../enums/withdrawal-status.enum';
 import { CryptoAddress } from 'src/transactions/deposit/entities/crypto-address.entity';
 import { WithdrawalTransaction } from './withdrawal-transaction.entity';
 import { WithdrawalFee } from './withdrawal-fee.entity';
+import { Company } from 'src/company/entity/company.entity';
 
 @Entity('withdrawals')
 export class Withdrawal {
@@ -75,6 +76,13 @@ export class Withdrawal {
 
   @Column({ type: 'text', nullable: true })
   error: string | null;
+
+  @ManyToOne(() => Company, (company) => company.withdrawals)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
+  @Column({ nullable: true })
+  companyId: number; // Add this field to store the companyId
 
   @OneToMany(() => WithdrawalTransaction, (t) => t.withdrawal, {
     cascade: ['insert'],

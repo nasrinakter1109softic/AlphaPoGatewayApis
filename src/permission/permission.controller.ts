@@ -12,7 +12,6 @@ import {
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
-import { GenericQueryOptions } from 'src/common/services/generic-query.service';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 
 @Controller('permissions')
@@ -21,7 +20,6 @@ export class PermissionController {
 
   @Post('create')
   create(@Body() body: CreatePermissionDto) {
-    console.log('Creating permission with body:', body);
     if (!body.title || !body.slug) {
       throw new BadRequestException('Title and Slug is required');
     }

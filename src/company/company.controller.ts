@@ -10,13 +10,15 @@ import {
   Query,
   Put,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
-import { UserStatus } from 'src/common/enums/user-status';
+import { User } from 'src/auth/decorators/user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('companies')
 export class CompanyController {
@@ -39,9 +41,11 @@ export class CompanyController {
     return this.companyService.findOne(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/approve')
-  approveCompany(@Param('id') id: string) {
-    return this.companyService.approveCompany(+id);
+  approveCompany(@User('user') user: any, @Param('id') id: string) {
+    console.log(user.userId, 'User ID from JWT');
+    return this.companyService.approveCompany(+id, user.userId);
   }
 
   @Delete(':id')

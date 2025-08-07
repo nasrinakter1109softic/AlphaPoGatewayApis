@@ -1,5 +1,7 @@
 import { Balance } from 'src/balance/entity/balance.entity';
 import { CompanyStatus } from 'src/common/enums/company-status';
+import { Deposit } from 'src/transactions/deposit/entities/deposit.entity';
+import { Withdrawal } from 'src/transactions/withdraw/entities/withdrawal.entity';
 import { User } from 'src/user/entity/user.entity'; // Correct the path
 import {
   Entity,
@@ -23,7 +25,7 @@ export class Company {
   @Column({ unique: true })
   email: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   phone: string;
 
   @Column()
@@ -33,7 +35,7 @@ export class Company {
   businessName: string;
 
   @Column({ nullable: true })
-  approvedBy: string;
+  approvedBy: number;
 
   @Column({ default: CompanyStatus.PENDING })
   status: string;
@@ -66,6 +68,12 @@ export class Company {
     default: 0,
   })
   commission_rate: number;
+
+  @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.company)
+  withdrawals: Withdrawal[];
+
+  @OneToMany(() => Deposit, (deposit) => deposit.company)
+  deposits: Deposit[];
 
   @OneToOne(() => User, (user) => user.company)
   @JoinColumn()
