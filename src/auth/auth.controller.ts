@@ -4,11 +4,13 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 import { ClientInfo } from './decorators/client-info.decorator';
+import { Permissions } from './decorators/permissions.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Permissions('auth_login')
   @Post('login')
   login(
     @Body() dto: LoginDto,
@@ -18,6 +20,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Permissions('auth_logout')
   @Post('logout')
   async logout(@Req() req: Request, @Body() body: { refreshToken: string }) {
     const accessToken = req.headers.authorization?.split(' ')[1];
@@ -28,17 +31,13 @@ export class AuthController {
     return this.authService.logout(accessToken, exp, body.refreshToken);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Permissions('auth_refresh')
   @Post('refresh')
   refresh(
     @Body() body: { refresh_token: string },
     @ClientInfo() client: { ip: string; userAgent: string },
   ) {
     return this.authService.refresh(body.refresh_token, client);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  me(@Req() req: Request) {
-    return req.user;
   }
 }

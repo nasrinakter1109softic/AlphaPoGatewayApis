@@ -33,10 +33,21 @@ export class Roles {
   users: User[];
 
   @ManyToMany(() => Permission, (permission) => permission.roles)
-  @JoinTable()
+  @JoinTable({
+    name: 'role_permissions',
+    joinColumn: { name: 'role_id', referencedColumnName: 'roleId' },
+    inverseJoinColumn: {
+      name: 'permission_id',
+      referencedColumnName: 'permissionId',
+    },
+  })
   permissions: Permission[];
 
   @ManyToMany(() => Menu, (menu) => menu.roles)
-  @JoinTable()
+  @JoinTable({
+    name: 'role_menus',
+    joinColumn: { name: 'role_id', referencedColumnName: 'roleId' },
+    inverseJoinColumn: { name: 'menu_id', referencedColumnName: 'id' },
+  })
   menus: Menu[];
 }

@@ -85,9 +85,6 @@ export class DepositService {
   async getDepositList(queryOptions: GenericQueryDto, user: any) {
     // Add companyId filter for merchant users
     if (user.userType === UserType.MERCHANT) {
-      if (!user.companyId) {
-        throw new Error('Company ID not found for merchant user');
-      }
       queryOptions.filters = queryOptions.filters || {};
       queryOptions.filters.companyId = user.companyId.toString();
     }

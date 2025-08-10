@@ -1,6 +1,11 @@
-import { Body, Controller, Post, Headers } from '@nestjs/common';
+import { Body, Controller, Post, Headers, UseGuards } from '@nestjs/common';
 import { AlphapoService } from './alphapo.service';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/role.guard';
+import { Roles } from './auth/decorators/role.decorator';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('SUPER_ADMIN')
 @Controller()
 export class AlphapoController {
   constructor(private readonly alphapoService: AlphapoService) {}

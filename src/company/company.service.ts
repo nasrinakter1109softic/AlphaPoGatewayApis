@@ -141,12 +141,18 @@ export class CompanyService {
     }
   }
 
-  async findAll(options: GenericQueryDto) {
-    return this.genericQuery.query(this.companyRepo, 'company', options, {
+  async findAll(options: GenericQueryDto, user?: any) {
+    if (user && user.userType === UserType.MERCHANT) {
+      options.filters = options.filters || {};
+      options.filters.userId = user.userId.toString();
+    }
+
+    return await this.genericQuery.query(this.companyRepo, 'company', options, {
       allowedFilterColumns: ['name', 'email', 'phone', 'softDelete'],
       searchableColumns: ['name', 'email', 'phone'],
       enforcedFilters: { softDelete: false },
       relations: ['user', 'balances'],
+      excludedFields: ['user.password', 'user.refreshTokens', 'user.otp'],
     });
   }
 

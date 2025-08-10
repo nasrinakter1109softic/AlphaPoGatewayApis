@@ -4,18 +4,21 @@ import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
 import { User } from 'src/auth/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('deposit')
 export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
+  @Permissions('deposit_list')
   @Get()
   async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
     console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
     return this.depositService.getDepositList(queryOptions, user);
   }
 
+  @Permissions('deposit_create_address')
   @Post('createAddress')
   async createAddressForUser(
     @Body() body: CreateCryptoAddressDto,

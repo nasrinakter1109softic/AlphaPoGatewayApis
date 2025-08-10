@@ -6,6 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "seed": "ts-node scripts/seeds/seed.ts",
+    "seed:reset": "ts-node scripts/seeds/reset-and-seed.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -20,6 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migrate": "ts-node scripts/migrate.ts",
     "migrate-and-run": "ts-node scripts/migrate-and-run.ts",
+    "migrate:dry": "ts-node scripts/migrate-and-run.ts --dry",
     "migrate-util": "ts-node scripts/migrate-utils.ts  "
   },
   "dependencies": {
