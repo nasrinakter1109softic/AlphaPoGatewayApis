@@ -38,7 +38,7 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6385:6379"
     volumes:
       - redis_data:/data
     command: redis-server --requirepass 123456
@@ -59,7 +59,7 @@ services:
     container_name: redis_commander
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "8082:8081"
     environment:
       REDIS_HOST: redis     
       REDIS_PORT: 6379
@@ -78,7 +78,7 @@ services:
     build: .
     container_name: alphapo_app
     ports:
-      - "3000:3000"
+      - "5000:3000"
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/alphapolocaldb
       REDIS_HOST: redis
