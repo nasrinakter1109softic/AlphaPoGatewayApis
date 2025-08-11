@@ -1,0 +1,111 @@
+import { Injectable } from '@nestjs/common';
+import { CryptoAddress } from '../entities/crypto-address.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AlphapoService } from 'src/alphapo.service';
+import { User } from 'src/user/entity/user.entity';
+import { Deposit } from '../entities/deposit.entity';
+import { GenericQueryService } from 'src/common/services/generic-query.service';
+import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
+import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
+import { UserType } from 'src/common/enums/user-type.enum';
+
+@Injectable()
+export class DepositService {
+  constructor(
+    @InjectRepository(CryptoAddress)
+    private readonly cryptoAddressRepo: Repository<CryptoAddress>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
+    private readonly alphapoService: AlphapoService,
+    private readonly genericQueryService: GenericQueryService,
+  ) {}
+  async createAddressForUser(data: CreateCryptoAddressDto, userId: number) {
+    const { currency, convertTo } = data;
+    // Step 1: Find user and company
+    const user = await this.userRepo.findOne({
+      where: { userId: userId },
+      relations: ['company'],
+    });
+
+    if (!user || !user.company) {
+      throw new Error('Company not found for user');
+    }
+
+    const companyId = user.company.companyId;
+
+    // Step 2: Check if address already exists for this company and currency
+    const existingAddress = await this.cryptoAddressRepo.findOne({
+      where: { companyId, currency },
+    });
+
+    if (existingAddress) {
+      return existingAddress; // Return existing address if found
+    }
+
+    // Step 3: Create a new address from Alphapo
+    const payload = {
+      foreign_id: `user-${userId}`,
+      currency,
+      ...(convertTo ? { convert_to: convertTo } : {}),
+    };
+
+    const response = await this.alphapoService.createDepositAddress(
+      payload.foreign_id,
+      payload.currency,
+      payload.convert_to,
+    );
+
+    if (!response || !response.data) {
+      throw new Error('Failed to create crypto address');
+    }
+
+    const addressData = response.data;
+
+    // Step 4: Save new address to DB
+    await this.cryptoAddressRepo.save({
+      companyId, // Assign the companyId to the new address
+      userId,
+      currency,
+      address: addressData.address,
+      tag: addressData.tag,
+      foreignId: `user-${userId}`,
+    });
+
+    return addressData;
+  }
+  /**
+   * Retrieves a paginated list of deposits with filters and relations.
+   * @param queryOptions The query options (pagination, filters, search, etc.)
+   * @param user The authenticated user (for merchant-specific filtering)
+   * @returns A paginated result with nested deposit items
+   */
+  async getDepositList(queryOptions: GenericQueryDto, user: any) {
+    // Add companyId filter for merchant users
+    if (user.userType === UserType.MERCHANT) {
+      queryOptions.filters = queryOptions.filters || {};
+      queryOptions.filters.companyId = user.companyId.toString();
+    }
+    const result = await this.genericQueryService.query(
+      this.depositRepo,
+      'd',
+      queryOptions,
+      {
+        allowedFilterColumns: ['status', 'companyId', 'currencyReceived'],
+        searchableColumns: ['currencySent', 'currencyReceived'],
+        defaultOrder: { column: 'createdAt', direction: 'DESC' },
+        relations: ['cryptoAddress', 'company', 'fees'],
+        excludedFields: [
+          'crypto_address_id',
+          'amount_minus_fee',
+          'raw',
+          'fees.amount',
+        ],
+      },
+      [], // Nested response
+    );
+    return result;
+  }
+}
