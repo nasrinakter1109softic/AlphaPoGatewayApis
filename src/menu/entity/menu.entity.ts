@@ -19,7 +19,7 @@ export class Menu {
   @Column({ nullable: true })
   description?: string;
 
-  @Column({ unique: true }) // ✅ unique constraint লাগালাম
+  @Column({ unique: true })
   path: string;
 
   @Column({ nullable: true })

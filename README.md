@@ -1,98 +1,239 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Alphapro Gateway Server — Dockerized README
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production‑ready, Dockerized NestJS + TypeORM (0.3) backend with PostgreSQL. Includes clean workflows for migrations, idempotent seeding, and role/permission mapping tailored to this project.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> **Stack**: Node (TypeScript), NestJS, TypeORM 0.3, PostgreSQL, Docker Compose
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Table of Contents
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Project Structure](#project-structure)
+- [Configuration (.env)](#configuration-env)
+- [Run with Docker](#run-with-docker)
+- [Run Locally (optional)](#run-locally-optional)
+- [Migrations](#migrations)
+- [Seeding](#seeding)
+- [NPM Scripts](#npm-scripts)
+- [API Modules](#api-modules)
+- [Database Notes](#database-notes)
+- [Troubleshooting](#troubleshooting)
 
-## Project setup
+---
 
-```bash
-$ npm install
+## Overview
+This service acts as a gateway server for payment/merchant operations. It provides Role‑Based Access Control (RBAC) using **Roles ↔ Permissions ↔ Menus** and integrates provider‑specific logic (e.g., **Alphapo**). The repository ships with:
+
+- **Dockerized** app and database
+- **TypeORM DataSource** config (no legacy createConnection)
+- **Migration helper** (`migrate-and-run`)
+- **Idempotent seeding** for Roles, Menus, Permissions
+- **Diff‑based mapping** of permissions/menus to roles (safe to re‑run)
+
+---
+
+## Requirements
+- **Docker** 24+ & **Docker Compose** v2
+- (Optional) **Node.js 18+** & **npm** for running scripts on host
+
+---
+
+## Project Structure
+```
+.
+├─ docker-compose.yml
+├─ Dockerfile
+├─ src/
+│  ├─ config/ormconfig.ts
+│  ├─ role/entity/role.entity.ts
+│  ├─ permission/entity/permission.entity.ts
+│  ├─ menu/entity/menu.entity.ts
+│  ├─ user/entity/user.entity.ts
+│  ├─ ... controllers/services/modules ...
+├─ scripts/
+│  ├─ migrate-and-run.ts
+│  └─ seeds/
+│     ├─ seed.ts
+│     ├─ reset-and-seed.ts
+│     ├─ seedRoles.ts
+│     ├─ seedMenus.ts
+│     ├─ permissions.list.ts
+│     ├─ seedAllPermissions.ts
+│     └─ mapPermissionsToRolesAndMenus.ts
+├─ package.json
+├─ tsconfig.json
+└─ .env  (not committed)
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## Configuration (.env)
+Create a `.env` at project root (copy from `.env.example` if present):
 
-# watch mode
-$ npm run start:dev
+```
+# App
+NODE_ENV=development
+APP_PORT=3000
 
-# production mode
-$ npm run start:prod
+# Database (container names used below)
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=alphapro
+
+# Auth/Security (examples)
+JWT_SECRET=change-me
+ACCESS_TOKEN_TTL=15m
+REFRESH_TOKEN_TTL=7d
+
+# Seeding flags
+SEED_EXTRA_DATA=false
 ```
 
-## Run tests
+Ensure `ormconfig.ts` reads from these variables.
 
+---
+
+## Run with Docker
+
+1) **Build & start**
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker compose up -d --build
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+2) **Run migrations** inside the app container
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker compose exec app npm run migrate-and-run init
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+3) **Seed the database** (roles, menus, permissions, mapping)
+```bash
+docker compose exec app npm run seed
+```
 
-## Resources
+4) **Logs**
+```bash
+docker compose logs -f app
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+App is available at `http://localhost:3000` (adjust if you remap ports).
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## Run Locally (optional)
+```bash
+npm i
+npm run build   # or ts-node for dev
+# Make sure Postgres is running locally and .env points to it
+npm run migrate-and-run init
+npm run seed
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## Migrations
+Generate & run in one go:
+```bash
+npm run migrate-and-run add-some-change
+```
+If you get **“No changes in database schema were found”**, either:
+- Entities aren’t picked by the DataSource `entities` glob, or
+- You need a manual migration:
+```bash
+npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli migration:create src/migrations/manual-fix
+# edit the file and add SQL up/down
+npm run migrate-and-run manual-fix
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Dry‑run (generate only) is available if you added a `migrate:dry` script.
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Seeding
+
+### Standard seed
+Seeds Roles, Menus, the project’s Permissions list, then **maps** them to roles.
+```bash
+npm run seed
+```
+
+### Reset + seed (dev only)
+Truncates seed‑related tables with CASCADE and re‑seeds.
+```bash
+npm run seed:reset
+```
+
+### Extra test data
+Enable via env and re‑run seed:
+```bash
+SEED_EXTRA_DATA=true npm run seed
+```
+
+---
+
+## NPM Scripts
+Common scripts wired for this repo:
+```json
+{
+  "scripts": {
+    "migrate-and-run": "ts-node scripts/migrate-and-run.ts",
+    "seed": "ts-node -r tsconfig-paths/register scripts/seeds/seed.ts",
+    "seed:reset": "ts-node -r tsconfig-paths/register scripts/seeds/reset-and-seed.ts",
+    "migrate:dry": "ts-node scripts/migrate-and-run.ts --dry"
+  }
+}
+```
+
+---
+
+## API Modules
+High‑level modules/controllers included in this project (routes vary by implementation):
+
+- **AuthController** — login/logout, refresh, profile, password ops
+- **CompanyController** — CRUD, status toggle, API key rotate, settlement config
+- **CurrencyController** — CRUD, provider sync
+- **MenuController** — CRUD for app navigation items
+- **PermissionController** — CRUD for RBAC permissions
+- **RoleController** — CRUD and assign permissions to roles
+- **DepositController** — list/view/create manual/approve/reject/export
+- **TransactionCallbackController** — list/view/retry/reprocess callbacks
+- **UploadController** — file upload/list/view/delete
+- **AppController** — health/status/cache utilities
+- **AlphapoController** — provider ops: balance, address, withdraw, sync
+
+> For exact routes/DTOs, check the corresponding `*.controller.ts` files or Swagger if enabled.
+
+---
+
+## Database Notes
+- **Uniqueness for upserts**: ensure `roles.roleName`, `permissions.slug`, `menus.path` are `@Column({ unique: true })`.
+- **Many‑to‑many**: keep `@JoinTable()` only on the **owning side** (this project uses **Roles** as owning side for `permissions` and `menus`).
+- **Mapper**: `mapPermissionsToRolesAndMenus.ts` uses **diff‑based** sync to avoid duplicate junction inserts.
+
+---
+
+## Troubleshooting
+
+**ON CONFLICT needs unique**
+> `there is no unique or exclusion constraint matching the ON CONFLICT specification`
+Add unique constraints on natural keys used for upsert (e.g., `slug`, `roleName`, `path`).
+
+**JoinTable metadata undefined**
+> `Cannot read properties of undefined (reading 'tableName'|'tablePath')`
+Ensure `@JoinTable()` exists on one side of each many‑to‑many relation (owning side).
+
+**Duplicate key on junction**
+> `duplicate key value violates unique constraint ... (role_id, permission_id)`
+Use the provided **diff‑based** mapper (adds/removes only changes) instead of bulk re‑add.
+
+**Path aliases not resolving**
+Run scripts with `-r tsconfig-paths/register` or import it in the script file.
+
+**“No changes in database schema were found”**
+Confirm entities are loaded by the DataSource; if needed, create a manual migration and write SQL.
+
+---
+
+Happy shipping! 🚀
