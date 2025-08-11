@@ -184,7 +184,7 @@ export class CompanyService {
   ): Promise<{ message: string }> {
     const company = await this.companyRepo.findOne({
       where: { companyId: id, isOtpVerified: true },
-      relations: ['user'],
+      relations: ['user', 'user.role'],
     });
     if (!company) throw new NotFoundException('Company not found');
     company.status = CompanyStatus.APPROVED;

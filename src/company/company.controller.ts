@@ -12,7 +12,6 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
@@ -48,21 +47,21 @@ export class CompanyController {
   // @UseGuards(OptionalJwtAuthGuard)
   @Permissions('company_list')
   @Get()
-  findAll(@Query() query: GenericQueryDto, @User('user') user: any) {
+  findAll(@Query() query: GenericQueryDto, @User() user: any) {
     return this.companyService.findAll(query);
   }
 
   // @UseGuards(OptionalJwtAuthGuard)
   @Permissions('company_view')
   @Get(':id')
-  findOne(@Param('id') id: string, @User('user') user: any) {
+  findOne(@Param('id') id: string, @User() user: any) {
     return this.companyService.findOne(+id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Permissions('company_approve')
   @Patch(':id/approve')
-  approveCompany(@User('user') user: any, @Param('id') id: string) {
+  approveCompany(@User() user: any, @Param('id') id: string) {
     if (user.role.roleName !== 'SUPER_ADMIN') {
       throw new UnauthorizedException('Only super admin can approve a company');
     }
@@ -72,7 +71,8 @@ export class CompanyController {
   @UseGuards(JwtAuthGuard)
   @Permissions('company_delete')
   @Delete(':id')
-  remove(@Param('id') id: string, @User('user') user: any) {
+  remove(@Param('id') id: string, @User() user: any) {
+    console.log('User from decorator:', user);
     if (user.role.roleName !== 'SUPER_ADMIN') {
       throw new UnauthorizedException('Only super admin can delete a company');
     }
