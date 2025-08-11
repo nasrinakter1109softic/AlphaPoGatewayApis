@@ -6,7 +6,6 @@ import {
   ManyToMany,
   CreateDateColumn,
   UpdateDateColumn,
-  JoinTable,
 } from 'typeorm';
 
 @Entity('permissions')
@@ -21,7 +20,6 @@ export class Permission {
   slug: string;
 
   @ManyToMany(() => Roles, (role) => role.permissions)
-  @JoinTable()
   roles: Roles[];
 
   @CreateDateColumn()

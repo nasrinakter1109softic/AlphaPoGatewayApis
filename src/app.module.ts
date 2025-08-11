@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AlphapoController } from './alphapo.controller';
 import { AlphapoService } from './alphapo.service';
-import { InvoiceModule } from './invoice/invoice.module';
 import { UploadModule } from './upload/upload.module';
 import { HttpModule } from '@nestjs/axios';
 import { HmacUtil } from './common/utils/hmac.util';
@@ -56,7 +55,6 @@ import { BalanceModule } from './balance/balance.module';
       }),
     }),
 
-    InvoiceModule,
     UploadModule,
     HttpModule,
     RoleModule,

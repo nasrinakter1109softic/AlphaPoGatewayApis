@@ -19,8 +19,8 @@ export class Menu {
   @Column({ nullable: true })
   description?: string;
 
-  @Column({ nullable: true })
-  path?: string;
+  @Column({ unique: true }) // ✅ unique constraint লাগালাম
+  path: string;
 
   @Column({ nullable: true })
   iconUrl?: string;
