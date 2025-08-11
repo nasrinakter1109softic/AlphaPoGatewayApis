@@ -42,29 +42,35 @@ export class CompanyService {
     adminInfo: any,
     sendOtpType: SendOtpType,
   ): Promise<{ message: string }> {
-    const { name, email, phone, password, ...rest } = createCompanyDto;
-    const { isSuperAdmin, userId } = adminInfo;
     try {
-      const [existingCompany, existingUser] = await Promise.all([
-        this.companyRepo.findOne({ where: [{ name }, { email }] }),
-        this.userRepo.findOne({ where: [{ email }, { phone }] }),
-      ]);
+      const { name, email, phone, password, ...rest } = createCompanyDto;
+      const isSuperAdmin = !!adminInfo?.isSuperAdmin;
+      const actorUserId = adminInfo?.userId ?? null;
+      const existingCompany = await this.companyRepo.findOne({
+        where: [{ name }, { email }],
+      });
 
-      if (existingCompany) {
+      const userWhere: any[] = [{ email }];
+      if (phone) userWhere.push({ phone });
+      const existingUser = await this.userRepo.findOne({ where: userWhere });
+
+      // const [existingCompany, existingUser] = await Promise.all([
+      //   this.companyRepo.findOne({ where: [{ name }, { email }] }),
+      //   this.userRepo.findOne({ where: [{ email }, { phone }] }),
+      // ]);
+      if (existingCompany)
         throw new BadRequestException('Company name or email already exists');
-      }
-
-      if (existingUser) {
+      if (existingUser)
         throw new BadRequestException(
           'User with this email or phone already exists',
         );
-      }
+
       // Generate Hash password
       const hashedPassword = await HashUtil.hashPassword(password);
       //  Create new user
       const user = this.userRepo.create({
         email,
-        phone,
+        ...(phone ? { phone } : {}),
         password: hashedPassword,
         userType: UserType.MERCHANT,
         userStatus: isSuperAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
@@ -77,10 +83,10 @@ export class CompanyService {
         email,
         phone,
         ...rest,
-        isAdminCreated: isSuperAdmin ? true : false,
-        isOtpVerified: isSuperAdmin ? true : false,
+        isAdminCreated: isSuperAdmin,
+        isOtpVerified: isSuperAdmin,
         status: isSuperAdmin ? CompanyStatus.APPROVED : CompanyStatus.PENDING,
-        approvedBy: isSuperAdmin ? userId : null,
+        approvedBy: isSuperAdmin ? actorUserId : null, // ✅
         user: savedUser,
       });
 
@@ -91,6 +97,8 @@ export class CompanyService {
       let message = 'Company created successfully';
       //  Generate + Send OTP if not SUPER_ADMIN
       if (!isSuperAdmin) {
+        if (!sendOtpType)
+          throw new BadRequestException('sendOtpType is required');
         const otpCode = OtpUtil.generateOtp();
         const otpExpiry = OtpUtil.getExpiry();
 
@@ -122,6 +130,8 @@ export class CompanyService {
           );
           message += '. Verification OTP sent via email.';
         } else if (sendOtpType === SendOtpType.PHONE) {
+          if (!phone)
+            throw new BadRequestException('Phone is required for SMS OTP');
           await this.smsService.sendSms(
             phone,
             `Welcome to AlphaPo. Your OTP is: ${otpCode}. It will expire in 10 minutes.`,

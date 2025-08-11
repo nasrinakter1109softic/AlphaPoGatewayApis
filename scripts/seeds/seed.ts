@@ -6,6 +6,7 @@ import { seedRoles } from './seedRoles';
 import { seedAllPermissions } from './seedAllPermissions';
 import { seedMenus } from './seedMenus';
 import { mapPermissionsToRolesAndMenus } from './mapPermissionsToRolesAndMenus';
+import { seedSuperAdminUser } from './seedSuperAdminUser';
 
 async function seedDatabase() {
   await dataSource.initialize();
@@ -15,7 +16,7 @@ async function seedDatabase() {
     await seedAllPermissions(dataSource);
 
     await mapPermissionsToRolesAndMenus(dataSource);
-
+    await seedSuperAdminUser(dataSource);
     console.log('Database seeding completed successfully!');
   } catch (error) {
     console.error('Error seeding database:', error);

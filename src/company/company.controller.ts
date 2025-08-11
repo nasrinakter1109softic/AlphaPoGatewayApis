@@ -22,24 +22,26 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { Public } from '@/auth/decorators/public.decorator';
 
 @UseGuards(OptionalJwtAuthGuard)
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
+  @Public()
   @Permissions('company_create')
   @Post()
-  create(
-    @User('user') user: any,
-    @Body() dto: CreateCompanyDto,
-    @Req() req: any,
-  ) {
+  create(@User() user: any, @Body() dto: CreateCompanyDto, @Req() req: any) {
     const { sendOtpType, ...rest } = dto;
     console.log('User from decorator:', user);
-    // const isSuperAdmin = this.extractIsSuperAdmin(req?.headers?.authorization);
-    const isSuperAdmin = user?.role?.roleName === 'SUPER_ADMIN' ? true : false;
-    const adminInfo = { isSuperAdmin, userId: user?.userId };
+    const adminInfo = user
+      ? {
+          isSuperAdmin: user?.role?.roleName === 'SUPER_ADMIN',
+          userId: user.userId,
+        }
+      : null;
+    console.log('Admin Info:', adminInfo);
     return this.companyService.create(rest, adminInfo, sendOtpType);
   }
 

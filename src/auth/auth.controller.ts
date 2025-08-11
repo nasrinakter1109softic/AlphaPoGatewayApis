@@ -5,11 +5,13 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 import { ClientInfo } from './decorators/client-info.decorator';
 import { Permissions } from './decorators/permissions.decorator';
+import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Permissions('auth_login')
   @Post('login')
   login(

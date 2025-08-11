@@ -1,4 +1,3 @@
-// scripts/seeds/reset-and-seed.ts
 import 'dotenv/config';
 import 'tsconfig-paths/register';
 import dataSource from '../../src/config/ormconfig';

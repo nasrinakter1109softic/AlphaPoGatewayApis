@@ -26,7 +26,7 @@ export class Company {
   email: string;
 
   @Column({ unique: true, nullable: true })
-  phone: string;
+  phone?: string | null;
 
   @Column()
   country: string;

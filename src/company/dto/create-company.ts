@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsEmail,
@@ -5,6 +6,9 @@ import {
   IsUrl,
   IsPhoneNumber,
   IsIn,
+  ValidateIf,
+  IsNotEmpty,
+  IsEnum,
 } from 'class-validator';
 import { SendOtpType } from 'src/common/enums/send-otp-type.enum';
 
@@ -18,20 +22,23 @@ export class CreateCompanyDto {
   @IsString()
   password: string;
 
-  @IsPhoneNumber()
-  phone: string;
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
+  @ValidateIf((o) => o.sendOtpType === SendOtpType.PHONE)
+  @IsNotEmpty()
+  @IsPhoneNumber('BD', { message: 'phone must be a valid phone number' })
+  phone?: string;
 
   @IsString()
+  @IsNotEmpty()
   country: string;
 
   @IsString()
+  @IsNotEmpty()
   businessName: string;
 
-  @IsOptional()
-  @IsString()
-  @IsIn(['PHONE', 'EMAIL'], {
-    message: 'SendOtpType must be either Phone or email',
-  })
+  @IsEnum(SendOtpType, { message: 'sendOtpType must be PHONE or EMAIL' })
   sendOtpType?: SendOtpType;
 
   @IsOptional()
