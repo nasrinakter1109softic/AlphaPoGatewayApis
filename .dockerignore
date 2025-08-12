@@ -1,6 +1,60 @@
+# --- Node / package managers ---
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Build output / caches ---
 dist
-npm-debug.log
-Dockerfile
-docker-compose.yml
+build
+.cache
+.tmp
+.nyc_output
+coverage
+.eslintcache
+*.tsbuildinfo
+
+# --- Environment & secrets ---
 .env
+.env.*
+!.env.example
+
+# --- Git ---
+.git
+.gitignore
+.gitattributes
+.github/
+
+# --- IDE / OS files ---
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# --- Test artifacts ---
+reports/
+test-results/
+jest-html-reporters-*/
+playwright-report/
+allure-results/
+cypress/videos/
+cypress/screenshots/
+
+# --- Local volumes / data (dev only) ---
+docker-data/
+postgres_data/
+redis_data/
+logs/
+*.log
+
+# --- App uploads / temp (if any) ---
+uploads/
+storage/
+tmp/
+
+# --- Optional: local-only scripts/config ---
+scripts/**/*.local.*
+docker-compose.override.yml
