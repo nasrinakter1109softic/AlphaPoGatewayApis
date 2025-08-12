@@ -23,11 +23,11 @@ import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 import { Permissions } from '@/auth/decorators/permissions.decorator';
 import { Public } from '@/auth/decorators/public.decorator';
 
-@UseGuards(OptionalJwtAuthGuard)
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Public()
   @Permissions('company_create')
   @Post()
@@ -51,10 +51,11 @@ export class CompanyController {
     return this.companyService.findAll(query);
   }
 
-  // @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Permissions('company_view')
   @Get(':id')
   findOne(@Param('id') id: string, @User() user: any) {
+    console.log('User from decorator:', user);
     return this.companyService.findOne(+id);
   }
 
@@ -79,7 +80,7 @@ export class CompanyController {
     return this.companyService.remove(+id);
   }
 
-  // @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Permissions('company_update')
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
