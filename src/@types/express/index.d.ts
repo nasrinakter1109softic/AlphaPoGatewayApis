@@ -7,6 +7,8 @@ declare module 'express' {
     permissions: string[];
     role?: number;
     phone?: string;
+    userType?: string;
+    companyId?: number;
   }
 
   interface Request {

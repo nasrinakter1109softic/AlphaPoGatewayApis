@@ -41,7 +41,7 @@ export class CompanyService {
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
     adminInfo: any,
     sendOtpType: SendOtpType,
-  ): Promise<{ message: string }> {
+  ){
     try {
       const { name, email, phone, password, ...rest } = createCompanyDto;
       const isSuperAdmin = !!adminInfo?.isSuperAdmin;
@@ -93,6 +93,7 @@ export class CompanyService {
       await this.companyRepo.save(company);
       user.companyId = company.companyId;
       await this.userRepo.save(user);
+      delete user.password; 
 
       let message = 'Company created successfully';
       //  Generate + Send OTP if not SUPER_ADMIN
@@ -142,7 +143,7 @@ export class CompanyService {
         }
       }
 
-      return { message };
+      return { message,  user  };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
 
@@ -154,12 +155,10 @@ export class CompanyService {
   async findAll(options: GenericQueryDto, user?: any) {
     if (user && user.userType === UserType.MERCHANT) {
       options.filters = options.filters || {};
-      options.filters.userId = user.userId.toString();
+      options.filters.companyId= user.companyId.toString();
     }
-
     return await this.genericQuery.query(this.companyRepo, 'company', options, {
-      allowedFilterColumns: ['name', 'email', 'phone', 'softDelete'],
-      searchableColumns: ['name', 'email', 'phone'],
+      searchableColumns: ['name', 'email', 'phone' ],
       enforcedFilters: { softDelete: false },
       relations: ['user', 'balances'],
       excludedFields: ['user.password', 'user.refreshTokens', 'user.otp'],
@@ -197,7 +196,7 @@ export class CompanyService {
       await this.userRepo.save(company.user);
     }
     return {
-      message: `Company with ${company.companyId} updated successfully`,
+      message: `Company ${company.name} updated successfully`,
     };
   }
 

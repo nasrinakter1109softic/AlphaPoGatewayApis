@@ -280,8 +280,7 @@ export class TransactionCallbackService {
         dateFrom: options.dateFrom,
         dateTo: options.dateTo,
         orderBy: options.orderBy
-          ? JSON.stringify(options.orderBy)
-          : 'createdAt DESC',
+      ,
       },
       {
         searchableColumns: ['provider', 'eventType', 'payload'], // searchable fields

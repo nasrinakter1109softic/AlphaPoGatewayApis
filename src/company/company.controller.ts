@@ -31,24 +31,25 @@ export class CompanyController {
   @Public()
   @Permissions('company_create')
   @Post()
-  create(@User() user: any, @Body() dto: CreateCompanyDto, @Req() req: any) {
+  create(@User() user: any, @Body() dto: CreateCompanyDto) {
     const { sendOtpType, ...rest } = dto;
     console.log('User from decorator:', user);
     const adminInfo = user
       ? {
           isSuperAdmin: user?.role?.roleName === 'SUPER_ADMIN',
-          userId: user.userId,
+          userId: user?.userId,
         }
       : null;
     console.log('Admin Info:', adminInfo);
     return this.companyService.create(rest, adminInfo, sendOtpType);
   }
 
-  // @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Permissions('company_list')
   @Get()
   findAll(@Query() query: GenericQueryDto, @User() user: any) {
-    return this.companyService.findAll(query);
+console.log('User from decorator:', user);
+    return this.companyService.findAll(query, user);
   }
 
   @UseGuards(JwtAuthGuard)
