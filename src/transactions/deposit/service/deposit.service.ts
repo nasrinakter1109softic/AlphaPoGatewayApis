@@ -100,8 +100,7 @@ export class DepositService {
         excludedFields: [
           'crypto_address_id',
           'amount_minus_fee',
-          'raw',
-          'fees.amount',
+          'raw'
         ],
       },
       [], // Nested response
