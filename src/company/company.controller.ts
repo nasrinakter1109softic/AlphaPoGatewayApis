@@ -26,9 +26,12 @@ import { Public } from '@/auth/decorators/public.decorator';
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+  @Get('get-otps')
+  getAllOtp() {
+    return this.companyService.getAllOtp();
+  }
 
   @UseGuards(OptionalJwtAuthGuard)
-  @Public()
   @Permissions('company_create')
   @Post()
   create(@User() user: any, @Body() dto: CreateCompanyDto) {
