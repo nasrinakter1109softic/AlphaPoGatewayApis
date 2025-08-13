@@ -1,3 +1,4 @@
+import { CryptoAddress } from '@/transactions/deposit/entities/crypto-address.entity';
 import { Balance } from 'src/balance/entity/balance.entity';
 import { CompanyStatus } from 'src/common/enums/company-status';
 import { Deposit } from 'src/transactions/deposit/entities/deposit.entity';
@@ -68,6 +69,9 @@ export class Company {
     default: 0,
   })
   commission_rate: number;
+
+  @OneToMany(() => CryptoAddress, (address) => address.company)
+  cryptoAddresses: CryptoAddress[];
 
   @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.company)
   withdrawals: Withdrawal[];

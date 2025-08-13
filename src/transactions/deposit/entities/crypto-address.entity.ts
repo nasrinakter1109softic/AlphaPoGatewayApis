@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { Deposit } from './deposit.entity';
 import { CurrencyEntity } from 'src/currency/entities/currency.entity';
+import { Company } from '@/company/entity/company.entity';
 
 @Entity('crypto_addresses')
 export class CryptoAddress {
@@ -34,8 +35,18 @@ export class CryptoAddress {
   @Column({ name: 'foreign_id', length: 128 })
   foreignId: string;
 
+  @Column({ default: true })
+  isActive: boolean;
+
   @OneToMany(() => Deposit, (d) => d.cryptoAddress)
   deposits: Deposit[];
+
+  // Defining the relationship to Company (Many-to-One)
+  @ManyToOne(() => Company, (company) => company.cryptoAddresses, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'companyId' }) // Foreign key column
+  company: Company; // This represents the related company
 
   @ManyToOne(() => CurrencyEntity, (currency) => currency.cryptoAddresses)
   @JoinColumn({ name: 'currency', referencedColumnName: 'currency' })

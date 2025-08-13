@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { DepositService } from '../service/deposit.service';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
@@ -11,13 +20,15 @@ import { Permissions } from '@/auth/decorators/permissions.decorator';
 export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
-  @Permissions('deposit_list')
-  @Get()
-  async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
+  @Permissions('deposit_address_list')
+  @Get('crypto-addresses')
+  async getDepositAddresses(
+    @Query() queryOptions: GenericQueryDto,
+    @User() user: any,
+  ) {
     console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
-    return this.depositService.getDepositList(queryOptions, user);
+    return this.depositService.getDepositAddressList(queryOptions, user);
   }
-
   @Permissions('deposit_create_address')
   @Post('createAddress')
   async createAddressForUser(
@@ -29,5 +40,22 @@ export class DepositController {
       user.userId,
     );
     return response;
+  }
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: number,
+    @Body('isActive') isActive: boolean,
+  ) {
+    const response = await this.depositService.updateAddressStatus(
+      id,
+      isActive,
+    );
+    return response;
+  }
+  @Permissions('deposit_list')
+  @Get()
+  async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
+    console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
+    return this.depositService.getDepositList(queryOptions, user);
   }
 }
