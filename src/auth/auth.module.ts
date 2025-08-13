@@ -7,9 +7,11 @@ import { User } from 'src/user/entity/user.entity';
 import { PermissionCacheService } from 'src/common/services/permission-cache.service';
 import { RefreshToken } from './refreshToken/refresh-token.entity';
 import { RefreshTokenService } from './refreshToken/refresh-token.service';
+import { Otp } from '@/otp/entity/otp.entity';
+import { CommonModule } from '@/common/common.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, RefreshToken])],
+  imports: [TypeOrmModule.forFeature([User, RefreshToken, Otp]), CommonModule],
   controllers: [AuthController],
   providers: [
     AuthService,

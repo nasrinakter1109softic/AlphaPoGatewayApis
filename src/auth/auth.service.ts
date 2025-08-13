@@ -1,5 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -14,6 +15,14 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenService } from './refreshToken/refresh-token.service';
 import { parseExpiresIn } from 'src/common/utils/time.util';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { OtpUtil } from '@/common/utils/otp.util';
+import { Otp, OtpType } from '@/otp/entity/otp.entity';
+import { EmailService } from '@/common/services/email.service';
+import { SmsService } from '@/common/services/sms.service';
+import { SendMailDto } from '@/common/dtos/send-mail.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { HashUtil } from '@/common/utils/hash.util';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +32,9 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
     private readonly configService: ConfigService,
     private readonly refreshTokenService: RefreshTokenService,
+    @InjectRepository(Otp) private otpRepo: Repository<Otp>,
+    private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
   ) {}
 
   async validateUser(identifier: string, password: string) {
@@ -189,5 +201,97 @@ export class AuthService {
     } catch (err) {
       throw new UnauthorizedException(err.message || 'Invalid refresh token');
     }
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.findUserByEmailOrPhone(dto);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Generate OTP
+    const otpCode = OtpUtil.generateOtp();
+    const otpExpiry = OtpUtil.getExpiry();
+    // Save OTP (overwrite if already exists for user)
+    await this.otpRepo.save({
+      code: otpCode,
+      expireAt: otpExpiry.toISOString(),
+      used: false,
+      type: OtpType.FORGOT_PASSWORD,
+      user,
+      userId: user.userId,
+    });
+
+    // Send OTP via email or SMS
+    let message = 'OTP sent successfully';
+    if (dto.email) {
+      const payload: SendMailDto = {
+        to: dto.email,
+        subject: 'Your OTP For Password Reset',
+        html: `
+            <p>Hi ${user.company?.name},</p>
+            <p>Your OTP is: <strong>${otpCode}</strong></p>
+            <p>This code will expire in 10 minutes.</p>
+          `,
+      };
+
+      await this.emailService.sendMail(
+        payload.to,
+        payload.subject,
+        payload.html,
+      );
+      message += '. Verification OTP sent via email.';
+    } else if (dto.phone) {
+      await this.smsService.sendSms(
+        dto.phone,
+        `Welcome to AlphaPo. Your OTP is: ${otpCode} for reset password. It will expire in 10 minutes.`,
+      );
+      message += '. Verification OTP sent via SMS.';
+    }
+    delete user.password;
+    delete user.company;
+    return { message, user };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    // Check if OTP is for correct user
+    const user = await this.userRepo.findOne({
+      where: { userId: +dto.userId },
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const isMatch = await HashUtil.compare(dto.newPassword, user.password);
+    console.log('Is new password same as old:', isMatch);
+    if (isMatch) {
+      throw new BadRequestException(
+        'New password cannot be the same as the old password',
+      );
+    }
+
+    // Reset password
+    user.password = await HashUtil.hashPassword(dto.newPassword);
+    await this.userRepo.save(user);
+
+    return { message: 'Password reset successfully' };
+  }
+
+  private async findUserByEmailOrPhone(
+    dto: ForgotPasswordDto,
+  ): Promise<User | null> {
+    if (dto.email) {
+      return await this.userRepo.findOne({
+        where: { email: dto.email },
+        relations: ['company'],
+      });
+    }
+    if (dto.phone) {
+      return await this.userRepo.findOne({
+        where: { phone: dto.phone },
+        relations: ['company'],
+      });
+    }
+    return null;
   }
 }

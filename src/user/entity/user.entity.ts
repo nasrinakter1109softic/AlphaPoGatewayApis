@@ -65,9 +65,9 @@ export class User {
   @Column({ nullable: true })
   roleId: number;
 
-  @OneToOne(() => Otp, (otp) => otp.user, { nullable: true })
-  @JoinColumn()
-  otp: Otp;
+
+  @OneToMany(() => Otp, (otp) => otp.user) 
+  otps: Otp[];
 
   @Column({ nullable: true })
   otpId: number;
