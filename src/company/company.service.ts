@@ -37,14 +37,14 @@ export class CompanyService {
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
     private readonly genericQuery: GenericQueryService,
-    private readonly dataSource: DataSource, // Assuming you have a DataSource injected
+    private readonly dataSource: DataSource, 
   ) {}
   async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
     adminInfo: any,
     sendOtpType: SendOtpType,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner(); // Assuming you have a dataSource set up
+    const queryRunner = this.dataSource.createQueryRunner(); 
 
     // Start transaction
     await queryRunner.startTransaction();
@@ -246,11 +246,11 @@ export class CompanyService {
   }
 
   async verifyOtp(dto: VerifyOtpDto): Promise<{ message: string }> {
-    const { userId, code } = dto;
+    const { userId, code, type } = dto;
 
     const user = await this.userRepo.findOne({
       where: { userId },
-      relations: ['otp'],
+      relations: ['otps'],
     });
 
     if (!user) {
@@ -258,7 +258,7 @@ export class CompanyService {
     }
 
     const otp = await this.otpRepo.findOne({
-      where: { code },
+      where: { code , userId, isUsed: false , type },
     });
 
     if (!otp) {
@@ -289,7 +289,7 @@ export class CompanyService {
     company.isOtpVerified = true;
     await this.companyRepo.save(company);
 
-    return { message: 'OTP verified successfully. Account activated.' };
+    return { message: `OTP verified successfully. ${type==="CREATE_ACCOUNT"? "Account activated." : "For reset password"}` };
   }
 
   async getAllOtp(): Promise<Otp[]> {

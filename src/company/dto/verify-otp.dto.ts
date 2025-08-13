@@ -1,4 +1,5 @@
-import { IsNumber, IsString } from 'class-validator';
+import { OtpType } from '@/otp/entity/otp.entity';
+import { IsEnum, IsNumber, IsString } from 'class-validator';
 
 export class VerifyOtpDto {
   @IsNumber()
@@ -6,4 +7,7 @@ export class VerifyOtpDto {
 
   @IsString()
   code: string;
+
+  @IsEnum(OtpType)
+  type: OtpType; 
 }

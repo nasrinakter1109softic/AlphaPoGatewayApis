@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -6,6 +6,8 @@ import { Request } from 'express';
 import { ClientInfo } from './decorators/client-info.decorator';
 import { Permissions } from './decorators/permissions.decorator';
 import { Public } from './decorators/public.decorator';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -41,5 +43,22 @@ export class AuthController {
     @ClientInfo() client: { ip: string; userAgent: string },
   ) {
     return this.authService.refresh(body.refresh_token, client);
+  }
+
+  
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    if (!dto.email && !dto.phone) {
+      throw new BadRequestException('Please provide an email or phone number');
+    }
+    return this.authService.forgotPassword(dto);
+  }
+
+    @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    if (dto.newPassword !==dto.confirmPassword) {
+      throw new BadRequestException('Confirm password  not matched');
+    }
+    return this.authService.resetPassword(dto);
   }
 }
