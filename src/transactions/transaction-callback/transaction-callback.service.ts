@@ -279,8 +279,7 @@ export class TransactionCallbackService {
         filters: options.filters ?? {},
         dateFrom: options.dateFrom,
         dateTo: options.dateTo,
-        orderBy: options.orderBy
-      ,
+        orderBy: options.orderBy,
       },
       {
         searchableColumns: ['provider', 'eventType', 'payload'], // searchable fields

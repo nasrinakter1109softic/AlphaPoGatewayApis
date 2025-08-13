@@ -1,7 +1,9 @@
-// src/common/services/sms.service.ts
-
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
@@ -17,7 +19,7 @@ export class SmsService {
     this.smsConfig = appConfig?.sms;
 
     if (!this.smsConfig) {
-      throw new Error('SMS config is missing in app config');
+      throw new NotFoundException('SMS config is missing in app config');
     }
   }
 

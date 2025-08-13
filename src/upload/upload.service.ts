@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +28,7 @@ export class UploadService {
     const bucket = this.config.get<string>('app.s3.bucket');
 
     if (!bucket) {
-      throw new Error('S3_BUCKET is not defined');
+      throw new ConflictException('S3_BUCKET is not defined');
     }
 
     const params = {

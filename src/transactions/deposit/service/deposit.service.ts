@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CryptoAddress } from '../entities/crypto-address.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { AlphapoService } from 'src/alphapo.service';
 import { User } from 'src/user/entity/user.entity';
 import { Deposit } from '../entities/deposit.entity';
@@ -9,6 +13,8 @@ import { GenericQueryService } from 'src/common/services/generic-query.service';
 import { CreateCryptoAddressDto } from '../dtos/createCryptoAddress.dto';
 import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UserType } from 'src/common/enums/user-type.enum';
+import { Company } from '@/company/entity/company.entity';
+import { CurrencyEntity } from '@/currency/entities/currency.entity';
 
 @Injectable()
 export class DepositService {
@@ -19,6 +25,10 @@ export class DepositService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Deposit)
     private readonly depositRepo: Repository<Deposit>,
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
+    @InjectRepository(CurrencyEntity)
+    private readonly currencyRepository: Repository<CurrencyEntity>,
     private readonly alphapoService: AlphapoService,
     private readonly genericQueryService: GenericQueryService,
   ) {}
@@ -31,10 +41,25 @@ export class DepositService {
     });
 
     if (!user || !user.company) {
-      throw new Error('Company not found for user');
+      throw new NotFoundException('Company not found for user');
     }
 
     const companyId = user.company.companyId;
+    console.log(
+      `Creating address for userId: ${userId}, companyId: ${companyId}, currency: ${currency}, convertTo: ${convertTo}`,
+    );
+    const company = await this.companyRepository.findOne({
+      where: { companyId },
+    });
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+    const currencyEntity = await this.currencyRepository.findOne({
+      where: { currency },
+    });
+    if (!currencyEntity) {
+      throw new NotFoundException('Currency not found');
+    }
 
     // Step 2: Check if address already exists for this company and currency
     const existingAddress = await this.cryptoAddressRepo.findOne({
@@ -57,9 +82,9 @@ export class DepositService {
       payload.currency,
       payload.convert_to,
     );
-
+    console.log('response', response);
     if (!response || !response.data) {
-      throw new Error('Failed to create crypto address');
+      throw new BadRequestException('Failed to create crypto address');
     }
 
     const addressData = response.data;
@@ -97,11 +122,7 @@ export class DepositService {
         searchableColumns: ['currencySent', 'currencyReceived'],
         defaultOrder: { column: 'createdAt', direction: 'DESC' },
         relations: ['cryptoAddress', 'company', 'fees'],
-        excludedFields: [
-          'crypto_address_id',
-          'amount_minus_fee',
-          'raw'
-        ],
+        excludedFields: ['crypto_address_id', 'amount_minus_fee', 'raw'],
       },
       [], // Nested response
     );

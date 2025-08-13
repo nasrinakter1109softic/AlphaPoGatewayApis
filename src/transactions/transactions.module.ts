@@ -19,6 +19,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Company } from 'src/company/entity/company.entity';
 import { Balance } from 'src/balance/entity/balance.entity';
 import { DepositController } from './deposit/controller/deposit.controller';
+import { CurrencyEntity } from '@/currency/entities/currency.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { DepositController } from './deposit/controller/deposit.controller';
       User,
       Company,
       Balance,
+      CurrencyEntity, // Ensure CurrencyEntity is imported for relations
     ]),
   ],
   providers: [

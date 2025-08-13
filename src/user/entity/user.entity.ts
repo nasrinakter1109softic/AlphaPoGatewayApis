@@ -48,11 +48,10 @@ export class User {
   userStatus: UserStatus;
 
   @OneToOne(() => Company, (company) => company.user, { nullable: true })
-  @JoinColumn({name: 'companyId', referencedColumnName: 'companyId'})
+  @JoinColumn({ name: 'companyId', referencedColumnName: 'companyId' })
   company: Company;
 
   @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
-  @JoinColumn()
   refreshTokens: RefreshToken[];
 
   @Column({ nullable: true })

@@ -48,7 +48,7 @@ export class CompanyController {
   @Permissions('company_list')
   @Get()
   findAll(@Query() query: GenericQueryDto, @User() user: any) {
-console.log('User from decorator:', user);
+    console.log('User from decorator:', user);
     return this.companyService.findAll(query, user);
   }
 

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 
@@ -10,7 +14,7 @@ export class EmailService {
   constructor(private readonly configService: ConfigService) {
     this.mailConfig = this.configService.get('app.mail', { infer: true });
     if (!this.mailConfig) {
-      throw new Error('Mail config not found in app.config.ts');
+      throw new NotFoundException('Mail config not found in app.config.ts');
     }
 
     this.transporter = nodemailer.createTransport({

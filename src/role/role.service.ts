@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Roles } from './entity/role.entity';
 import { Repository } from 'typeorm';
@@ -27,9 +29,9 @@ export class RoleService {
       relations: ['menus', 'permissions'],
     });
     if (existingRole) {
-      throw new Error('Role with this name already exists');
+      throw new ConflictException('Role with this name already exists');
     }
-    // Create a new role instance
+
     const role = this.roleRepository.create(data);
     return this.roleRepository.save(role);
   }
@@ -37,11 +39,11 @@ export class RoleService {
     page?: number;
     limit?: number;
     search?: string;
-    filters?: Record<string, string>; // e.g. { provider: 'alphapo', status: 'received' }
+    filters?: Record<string, string>;
     dateFrom?: string | Date;
     dateTo?: string | Date;
-    orderBy?: string; // e.g. { createdAt: 'DESC' }
-    orderDir?: 'ASC' | 'DESC'; // e.g. 'createdAt'
+    orderBy?: string;
+    orderDir?: 'ASC' | 'DESC';
   }) {
     const roles = await this.genericQueryService.query<Roles>(
       this.roleRepository,
@@ -57,7 +59,7 @@ export class RoleService {
         orderDir: options.orderDir,
       },
       {
-        searchableColumns: ['roleName'], // searchable fields
+        searchableColumns: ['roleName'],
         relations: ['menus', 'permissions'],
       },
     );
@@ -72,7 +74,7 @@ export class RoleService {
   async updateRole(roleId: number, data: UpdateRoleDto): Promise<Roles> {
     const role = await this.getRoleById(roleId);
     if (!role) {
-      throw new Error('Role not found');
+      throw new NotFoundException('Role not found');
     }
     role.roleName = data.roleName || role.roleName;
     return this.roleRepository.save(role);
@@ -80,13 +82,13 @@ export class RoleService {
   async deleteRole(roleId: number): Promise<void> {
     const role = await this.getRoleById(roleId);
     if (!role) {
-      throw new Error('Role not found');
+      throw new NotFoundException('Role not found');
     }
     if (role.isPredefined) {
-      throw new Error('Cannot delete predefined roles');
+      throw new ConflictException('Cannot delete predefined roles');
     }
     if (role.users && role.users.length > 0) {
-      throw new Error(
+      throw new ConflictException(
         'Cannot delete role because it is already assigned to users',
       );
     }
@@ -98,7 +100,7 @@ export class RoleService {
       relations: ['menus', 'permissions'],
     });
     if (!role) {
-      throw new Error('Role not found');
+      throw new NotFoundException('Role not found');
     }
     const menus = await this.menuRepo.findByIds(menuIds);
     role.menus = menus;
@@ -112,7 +114,7 @@ export class RoleService {
       relations: ['permissions', 'menus'],
     });
     if (!role) {
-      throw new Error('Role not found');
+      throw new NotFoundException('Role not found');
     }
     const permissions = await this.permissionRepo.findByIds(permissionIds);
     role.permissions = permissions;
