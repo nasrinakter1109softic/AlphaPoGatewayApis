@@ -4,10 +4,15 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
-  OneToOne,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+export enum OtpType {
+  CREATE_ACCOUNT = 'CREATE_ACCOUNT',
+  FORGOT_PASSWORD = 'FORGOT_PASSWORD'
+}
 
 @Entity('otp')
 export class Otp {
@@ -29,10 +34,17 @@ export class Otp {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToOne(() => User, (user) => user.otp, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.otps, { onDelete: 'CASCADE' })
   @JoinColumn()
   user: User;
 
   @Column({ nullable: true })
   userId: number;
+
+   @Column({
+    type: 'enum',
+    enum: OtpType,
+    default: OtpType.CREATE_ACCOUNT,
+  })
+  type: OtpType;
 }
