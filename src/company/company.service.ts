@@ -44,7 +44,7 @@ export class CompanyService {
     adminInfo: any,
     sendOtpType: SendOtpType,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner(); // Assuming you have a dataSource set up
+    const queryRunner = this.dataSource.createQueryRunner(); 
 
     // Start transaction
     await queryRunner.startTransaction();
