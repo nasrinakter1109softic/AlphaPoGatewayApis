@@ -38,6 +38,7 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   businessName: string;
 
+  @IsOptional()
   @IsEnum(SendOtpType, { message: 'sendOtpType must be PHONE or EMAIL' })
   sendOtpType?: SendOtpType;
 

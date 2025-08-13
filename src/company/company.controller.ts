@@ -26,9 +26,12 @@ import { Public } from '@/auth/decorators/public.decorator';
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+  @Get('get-otps')
+  getAllOtp() {
+    return this.companyService.getAllOtp();
+  }
 
   @UseGuards(OptionalJwtAuthGuard)
-  @Public()
   @Permissions('company_create')
   @Post()
   create(@User() user: any, @Body() dto: CreateCompanyDto) {
@@ -48,7 +51,7 @@ export class CompanyController {
   @Permissions('company_list')
   @Get()
   findAll(@Query() query: GenericQueryDto, @User() user: any) {
-console.log('User from decorator:', user);
+    console.log('User from decorator:', user);
     return this.companyService.findAll(query, user);
   }
 

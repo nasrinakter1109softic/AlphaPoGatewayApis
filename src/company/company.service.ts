@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Company } from './entity/company.entity';
 import { User } from 'src/user/entity/user.entity';
 import { UserType } from 'src/common/enums/user-type.enum';
@@ -23,6 +23,7 @@ import { GenericQueryDto } from 'src/common/dtos/GenericQueryDto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyStatus } from 'src/common/enums/company-status';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { Roles } from '@/role/entity/role.entity';
 
 @Injectable()
 export class CompanyService {
@@ -36,28 +37,33 @@ export class CompanyService {
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
     private readonly genericQuery: GenericQueryService,
+    private readonly dataSource: DataSource, // Assuming you have a DataSource injected
   ) {}
   async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
     adminInfo: any,
     sendOtpType: SendOtpType,
-  ){
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner(); // Assuming you have a dataSource set up
+
+    // Start transaction
+    await queryRunner.startTransaction();
+
     try {
       const { name, email, phone, password, ...rest } = createCompanyDto;
       const isSuperAdmin = !!adminInfo?.isSuperAdmin;
       const actorUserId = adminInfo?.userId ?? null;
-      const existingCompany = await this.companyRepo.findOne({
+
+      const existingCompany = await queryRunner.manager.findOne(Company, {
         where: [{ name }, { email }],
       });
 
       const userWhere: any[] = [{ email }];
       if (phone) userWhere.push({ phone });
-      const existingUser = await this.userRepo.findOne({ where: userWhere });
+      const existingUser = await queryRunner.manager.findOne(User, {
+        where: userWhere,
+      });
 
-      // const [existingCompany, existingUser] = await Promise.all([
-      //   this.companyRepo.findOne({ where: [{ name }, { email }] }),
-      //   this.userRepo.findOne({ where: [{ email }, { phone }] }),
-      // ]);
       if (existingCompany)
         throw new BadRequestException('Company name or email already exists');
       if (existingUser)
@@ -67,6 +73,11 @@ export class CompanyService {
 
       // Generate Hash password
       const hashedPassword = await HashUtil.hashPassword(password);
+
+      const role = await queryRunner.manager.findOne(Roles, {
+        where: { roleName: 'MERCHANT' },
+      });
+
       //  Create new user
       const user = this.userRepo.create({
         email,
@@ -75,8 +86,10 @@ export class CompanyService {
         userType: UserType.MERCHANT,
         userStatus: isSuperAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
         isActive: isSuperAdmin,
+        role,
       });
-      const savedUser = await this.userRepo.save(user);
+      const savedUser = await queryRunner.manager.save(user);
+
       //  Create new company
       const company = this.companyRepo.create({
         name,
@@ -86,16 +99,18 @@ export class CompanyService {
         isAdminCreated: isSuperAdmin,
         isOtpVerified: isSuperAdmin,
         status: isSuperAdmin ? CompanyStatus.APPROVED : CompanyStatus.PENDING,
-        approvedBy: isSuperAdmin ? actorUserId : null, // ✅
+        approvedBy: isSuperAdmin ? actorUserId : null,
         user: savedUser,
       });
 
-      await this.companyRepo.save(company);
+      await queryRunner.manager.save(company);
       user.companyId = company.companyId;
-      await this.userRepo.save(user);
-      delete user.password; 
+      await queryRunner.manager.save(user);
+
+      delete user.password;
 
       let message = 'Company created successfully';
+
       //  Generate + Send OTP if not SUPER_ADMIN
       if (!isSuperAdmin) {
         if (!sendOtpType)
@@ -104,7 +119,7 @@ export class CompanyService {
         const otpExpiry = OtpUtil.getExpiry();
 
         // Save OTP (overwrite if already exists for user)
-        await this.otpRepo.save({
+        await queryRunner.manager.save(Otp, {
           code: otpCode,
           expireAt: otpExpiry.toISOString(),
           used: false,
@@ -118,10 +133,10 @@ export class CompanyService {
             to: email,
             subject: 'Your OTP for AlphaPo Registration',
             html: `
-              <p>Hi ${name},</p>
-              <p>Your OTP is: <strong>${otpCode}</strong></p>
-              <p>This code will expire in 10 minutes.</p>
-            `,
+            <p>Hi ${name},</p>
+            <p>Your OTP is: <strong>${otpCode}</strong></p>
+            <p>This code will expire in 10 minutes.</p>
+          `,
           };
 
           await this.emailService.sendMail(
@@ -143,22 +158,31 @@ export class CompanyService {
         }
       }
 
-      return { message,  user  };
+      // Commit the transaction if all operations succeed
+      await queryRunner.commitTransaction();
+
+      return { message, user };
     } catch (error) {
+      // If anything goes wrong, roll back the transaction
+      await queryRunner.rollbackTransaction();
+
       if (error instanceof BadRequestException) throw error;
 
       console.error('Company creation failed:', error);
       throw new InternalServerErrorException('Failed to create company');
+    } finally {
+      // Release the query runner
+      await queryRunner.release();
     }
   }
 
   async findAll(options: GenericQueryDto, user?: any) {
     if (user && user.userType === UserType.MERCHANT) {
       options.filters = options.filters || {};
-      options.filters.companyId= user.companyId.toString();
+      options.filters.companyId = user.companyId.toString();
     }
     return await this.genericQuery.query(this.companyRepo, 'company', options, {
-      searchableColumns: ['name', 'email', 'phone' ],
+      searchableColumns: ['name', 'email', 'phone'],
       enforcedFilters: { softDelete: false },
       relations: ['user', 'balances'],
       excludedFields: ['user.password', 'user.refreshTokens', 'user.otp'],
@@ -266,5 +290,13 @@ export class CompanyService {
     await this.companyRepo.save(company);
 
     return { message: 'OTP verified successfully. Account activated.' };
+  }
+
+  async getAllOtp(): Promise<Otp[]> {
+    return await this.otpRepo.find({
+      where: { isUsed: false },
+      order: { createdAt: 'DESC' },
+      relations: ['user'],
+    });
   }
 }
