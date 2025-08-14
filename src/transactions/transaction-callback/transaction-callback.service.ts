@@ -53,6 +53,30 @@ export class TransactionCallbackService {
       return this.handleDepositCallback(body, signature);
     } else if (type === 'withdrawal') {
       return this.handleWithdrawalCallback(body, signature);
+    } else if (type === 'deposit_exchange') {
+      console.warn('Deposit exchange type not implemented yet');
+      return {
+        status: 'ok',
+        message: 'Deposit exchange type not implemented yet',
+        data: null,
+        statusCode: 501,
+      }; // Placeholder for future implementation
+    } else if (type === 'withdrawal_exchange') {
+      console.warn('Withdrawal exchange type not implemented yet');
+      return {
+        status: 'ok',
+        message: 'Withdrawal exchange type not implemented yet',
+        data: null,
+        statusCode: 501,
+      }; // Placeholder for future implementation
+    } else if (type === 'exchange') {
+      console.warn('Exchange type not implemented yet');
+      return {
+        status: 'ok',
+        message: 'Exchange type not implemented yet',
+        data: null,
+        statusCode: 501,
+      }; // Placeholder for future implementation
     }
   }
   private async handleDepositCallback(body: any, signature?: string) {
