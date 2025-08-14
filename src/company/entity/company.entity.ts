@@ -86,9 +86,9 @@ export class Company {
   @OneToMany(() => Balance, (balance) => balance.company)
   balances: Balance[];
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'now()' }) //
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'now()' }) //
   updatedAt: Date;
 }
