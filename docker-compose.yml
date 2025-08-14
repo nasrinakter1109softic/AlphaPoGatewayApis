@@ -1,9 +1,9 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16.9
     restart: on-failure
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: alphapolocaldb
@@ -61,11 +61,11 @@ services:
     ports:
       - "8082:8081"
     environment:
-      REDIS_HOST: redis     
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: 123456
       REDIS_URL: redis://redis:123456@redis:6379
-    
+
     depends_on:
       redis:
         condition: service_healthy
@@ -103,4 +103,3 @@ volumes:
 
 networks:
   microservices-network:
-    
