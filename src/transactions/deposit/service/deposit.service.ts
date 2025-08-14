@@ -157,6 +157,16 @@ export class DepositService {
     );
     return result;
   }
+  async getAddressById(id: number): Promise<CryptoAddress> {
+    const address = await this.cryptoAddressRepo.findOne({
+      where: { id },
+      relations: ['currencyEntity', 'company'],
+    });
+    if (!address) {
+      throw new NotFoundException('Crypto address not found');
+    }
+    return address;
+  }
   async updateAddressStatus(id: number, isActive: boolean): Promise<string> {
     // Step 1: Find the address
     const address = await this.cryptoAddressRepo.findOne({ where: { id } });

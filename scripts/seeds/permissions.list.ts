@@ -24,6 +24,8 @@ export const PERMISSIONS: Perm[] = [
 
   // ========== CurrencyController ==========
   { slug: 'currency_list', title: 'Currency: List' },
+  { slug: 'currency_update', title: 'Currency: Update' },
+  { slug: 'currency_view', title: 'Currency: View' },
 
   // ========== MenuController ==========
   { slug: 'menu_list', title: 'Menu: List' },
@@ -51,6 +53,9 @@ export const PERMISSIONS: Perm[] = [
   // ========== DepositController ==========
   { slug: 'deposit_list', title: 'Deposit: List' },
   { slug: 'deposit_create_address', title: 'Deposit: Create Address' },
+  { slug: 'deposit_address_list', title: 'Deposit Address: List' },
+  { slug: 'deposit_address_view', title: 'Deposit Address: View' },
+  { slug: 'deposit_address_update', title: 'Deposit Address: Update' },
 
   // ========== UploadController ==========
   //   { slug: 'upload_list', title: 'Upload: List' },

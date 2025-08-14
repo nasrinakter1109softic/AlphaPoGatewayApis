@@ -1,8 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrencyEntity } from './entities/currency.entity';
 import { AlphapoService } from 'src/alphapo.service';
+import { GenericQueryDto } from '@/common/dtos/GenericQueryDto';
+import { GenericQueryService } from '@/common/services/generic-query.service';
 
 @Injectable()
 export class CurrencyService {
@@ -10,6 +16,7 @@ export class CurrencyService {
     @InjectRepository(CurrencyEntity)
     private readonly currencyRepo: Repository<CurrencyEntity>,
     private readonly alphapoService: AlphapoService,
+    private readonly genericQueryService: GenericQueryService,
   ) {}
 
   async syncFromAlphaPo(): Promise<void> {
@@ -24,21 +31,63 @@ export class CurrencyService {
           deposit_fee_percent: c.deposit_fee_percent,
           withdrawal_fee_percent: c.withdrawal_fee_percent,
           precision: c.precision,
-          visible: true,
+          // visible: true,
         },
         ['currency'],
       );
     }
   }
 
-  async getAll(): Promise<CurrencyEntity[]> {
-    const currencies = await this.currencyRepo.find({
-      where: { visible: true },
-    });
-    if (!currencies.length) {
+  async getAllCurrencies(options?: GenericQueryDto) {
+    const currencies = await this.genericQueryService.query<CurrencyEntity>(
+      this.currencyRepo,
+      'currency',
+      options || {},
+      {
+        searchableColumns: ['currency'],
+        enforcedFilters: { visible: true },
+      },
+    );
+    if (!currencies.items.length) {
       await this.syncFromAlphaPo();
-      return this.currencyRepo.find({ where: { visible: true } });
+      return this.genericQueryService.query<CurrencyEntity>(
+        this.currencyRepo,
+        'currency',
+        options || {},
+        {
+          searchableColumns: ['currency'],
+          enforcedFilters: { visible: true },
+        },
+      );
     }
     return currencies;
+  }
+  async getCurrencyById(id: number): Promise<CurrencyEntity> {
+    const currency = await this.currencyRepo.findOne({
+      where: { id },
+      relations: ['cryptoAddresses'],
+    });
+    if (!currency) {
+      throw new NotFoundException('Currency not found');
+    }
+    return currency;
+  }
+
+  async updateCurrencyStatus(id: number, visible: boolean): Promise<string> {
+    const currencyInfo = await this.currencyRepo.findOne({
+      where: { id },
+    });
+    if (!currencyInfo) {
+      throw new NotFoundException('Currency not found');
+    }
+    currencyInfo.visible = visible;
+    try {
+      const updatedCurrency = await this.currencyRepo.save(currencyInfo);
+      return updatedCurrency
+        ? 'Crypto address status updated successfully'
+        : 'Failed to update address status';
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update address status');
+    }
   }
 }

@@ -37,14 +37,14 @@ export class CompanyService {
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
     private readonly genericQuery: GenericQueryService,
-    private readonly dataSource: DataSource, 
+    private readonly dataSource: DataSource,
   ) {}
   async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
     adminInfo: any,
     sendOtpType: SendOtpType,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner(); 
+    const queryRunner = this.dataSource.createQueryRunner();
 
     // Start transaction
     await queryRunner.startTransaction();
@@ -258,7 +258,7 @@ export class CompanyService {
     }
 
     const otp = await this.otpRepo.findOne({
-      where: { code , userId, isUsed: false , type },
+      where: { code, userId, isUsed: false, type },
     });
 
     if (!otp) {
@@ -289,7 +289,10 @@ export class CompanyService {
     company.isOtpVerified = true;
     await this.companyRepo.save(company);
 
-    return { message: `OTP verified successfully. ${type==="CREATE_ACCOUNT"? "Account activated." : "For reset password"}` };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+      message: `OTP verified successfully. ${type === 'CREATE_ACCOUNT' ? 'Account activated.' : 'For reset password'}`,
+    };
   }
 
   async getAllOtp(): Promise<Otp[]> {

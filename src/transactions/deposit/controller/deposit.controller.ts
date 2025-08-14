@@ -20,6 +20,12 @@ import { Permissions } from '@/auth/decorators/permissions.decorator';
 export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
+  @Permissions('deposit_list')
+  @Get()
+  async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
+    console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
+    return this.depositService.getDepositList(queryOptions, user);
+  }
   @Permissions('deposit_address_list')
   @Get('crypto-addresses')
   async getDepositAddresses(
@@ -41,7 +47,13 @@ export class DepositController {
     );
     return response;
   }
-  @Patch(':id/status')
+  @Permissions('deposit_address_view')
+  @Get('crypto-addresses/:id')
+  async getAddressById(@Param('id') id: number) {
+    const response = await this.depositService.getAddressById(id);
+    return response;
+  }
+  @Patch('crypto-addresses/:id/status')
   async updateStatus(
     @Param('id') id: number,
     @Body('isActive') isActive: boolean,
@@ -51,11 +63,5 @@ export class DepositController {
       isActive,
     );
     return response;
-  }
-  @Permissions('deposit_list')
-  @Get()
-  async getDeposits(@Query() queryOptions: GenericQueryDto, @User() user: any) {
-    console.log('Parsed queryOptions:', JSON.stringify(queryOptions, null, 2));
-    return this.depositService.getDepositList(queryOptions, user);
   }
 }

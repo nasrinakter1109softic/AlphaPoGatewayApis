@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Req, UseGuards, Get, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Get,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -45,7 +53,6 @@ export class AuthController {
     return this.authService.refresh(body.refresh_token, client);
   }
 
-  
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     if (!dto.email && !dto.phone) {
@@ -54,9 +61,9 @@ export class AuthController {
     return this.authService.forgotPassword(dto);
   }
 
-    @Post('reset-password')
+  @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    if (dto.newPassword !==dto.confirmPassword) {
+    if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('Confirm password  not matched');
     }
     return this.authService.resetPassword(dto);
