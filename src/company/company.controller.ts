@@ -21,11 +21,21 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 import { Permissions } from '@/auth/decorators/permissions.decorator';
-import { Public } from '@/auth/decorators/public.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+
+import { InjectPermissionsGuard } from 'src/auth/guards/inject-permissions.guard';
 
 @Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  @UseGuards(JwtAuthGuard, InjectPermissionsGuard, PermissionsGuard)
+  @Permissions('company_balance_list')
+  @Get('balances')
+  async listBalances(@Query() query: GenericQueryDto, @User() user: any) {
+    return this.companyService.getMerchantBalances(query, user);
+  }
+
   @Get('get-otps')
   getAllOtp() {
     return this.companyService.getAllOtp();
