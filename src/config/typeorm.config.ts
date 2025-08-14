@@ -20,7 +20,7 @@ export const getTypeOrmConfig = (
     password: configService.get('DB_PASS'),
     database: configService.get('DB_NAME'),
     autoLoadEntities: true,
-    synchronize: true,
+    synchronize: false,
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   };
 };
