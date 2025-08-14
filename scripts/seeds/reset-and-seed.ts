@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import 'tsconfig-paths/register';
-import dataSource from '../../src/config/ormconfig';
+import { AppDataSource } from '../../src/config/ormconfig';
 
 async function resetTables() {
   console.log('🗑️  Truncating seed-related tables (with CASCADE)...');
@@ -10,7 +10,7 @@ async function resetTables() {
 
   for (const table of tables) {
     try {
-      await dataSource.query(
+      await AppDataSource.query(
         `TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE;`,
       );
       console.log(`   ✔ ${table} truncated`);
@@ -21,11 +21,11 @@ async function resetTables() {
 }
 
 async function main() {
-  await dataSource.initialize();
+  await AppDataSource.initialize();
   try {
     await resetTables();
   } finally {
-    await dataSource.destroy();
+    await AppDataSource.destroy();
   }
 
   console.log('🌱  Running seed script...');
