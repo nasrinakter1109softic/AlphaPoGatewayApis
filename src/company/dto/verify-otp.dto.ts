@@ -9,5 +9,5 @@ export class VerifyOtpDto {
   code: string;
 
   @IsEnum(OtpType)
-  type: OtpType; 
+  type: OtpType;
 }

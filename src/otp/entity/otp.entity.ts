@@ -11,7 +11,7 @@ import {
 
 export enum OtpType {
   CREATE_ACCOUNT = 'CREATE_ACCOUNT',
-  FORGOT_PASSWORD = 'FORGOT_PASSWORD'
+  FORGOT_PASSWORD = 'FORGOT_PASSWORD',
 }
 
 @Entity('otp')
@@ -41,7 +41,7 @@ export class Otp {
   @Column({ nullable: true })
   userId: number;
 
-   @Column({
+  @Column({
     type: 'enum',
     enum: OtpType,
     default: OtpType.CREATE_ACCOUNT,

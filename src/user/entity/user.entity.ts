@@ -64,8 +64,7 @@ export class User {
   @Column({ nullable: true })
   roleId: number;
 
-
-  @OneToMany(() => Otp, (otp) => otp.user) 
+  @OneToMany(() => Otp, (otp) => otp.user)
   otps: Otp[];
 
   @Column({ nullable: true })

@@ -5,6 +5,8 @@ import {
   PrimaryGeneratedColumn,
   Unique,
   OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('currencies')
@@ -36,4 +38,10 @@ export class CurrencyEntity {
 
   @OneToMany(() => CryptoAddress, (address) => address.currencyEntity)
   cryptoAddresses: CryptoAddress[];
+
+  @CreateDateColumn({ type: 'timestamptz', precision: 6, name: 'createdAt' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz', precision: 6, name: 'updatedAt' })
+  updatedAt: Date;
 }

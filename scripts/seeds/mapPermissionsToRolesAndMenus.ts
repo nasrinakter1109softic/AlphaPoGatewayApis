@@ -129,8 +129,10 @@ export async function mapPermissionsToRolesAndMenus(ds: DataSource) {
       'company_view',
       'deposit_list',
       'deposit_create_address',
+      'deposit_address_view',
       'file_upload',
       'currency_list',
+      'currency_view',
     ]);
     const permIds = perms
       .filter((p) => allow.has(p.slug))
