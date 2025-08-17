@@ -133,6 +133,7 @@ export async function mapPermissionsToRolesAndMenus(ds: DataSource) {
       'file_upload',
       'currency_list',
       'currency_view',
+      'company_balance_list'
     ]);
     const permIds = perms
       .filter((p) => allow.has(p.slug))

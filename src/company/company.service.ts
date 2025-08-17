@@ -24,6 +24,7 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyStatus } from 'src/common/enums/company-status';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Roles } from '@/role/entity/role.entity';
+import { Balance } from '@/balance/entity/balance.entity';
 
 @Injectable()
 export class CompanyService {
@@ -38,6 +39,8 @@ export class CompanyService {
     private readonly smsService: SmsService,
     private readonly genericQuery: GenericQueryService,
     private readonly dataSource: DataSource,
+    @InjectRepository(Balance)
+    private readonly balanceRepo: Repository<Balance>,
   ) {}
   async create(
     createCompanyDto: Omit<CreateCompanyDto, 'sendOtpType'>,
@@ -301,5 +304,29 @@ export class CompanyService {
       order: { createdAt: 'DESC' },
       relations: ['user'],
     });
+  }
+
+  async getMerchantBalances(options: GenericQueryDto, user?: any) {
+    if (user && user.userType === UserType.MERCHANT) {
+      options.filters = options?.filters || {};
+      options.filters.companyId = user.companyId.toString();
+    }
+    return this.genericQuery.query(
+      this.balanceRepo,
+      'balance',
+      options,
+      {
+        allowedFilterColumns: ['currency', 'companyId'],
+        searchableColumns: ['currency'],
+        relations: ['company'],
+        defaultOrder: { column: 'companyId', direction: 'ASC' },
+      },
+      [
+        'balance.balance AS balance',
+        'balance.currency AS currency',
+        'company.companyId AS "companyId"',
+        'company.name AS "companyName"',
+      ],
+    );
   }
 }

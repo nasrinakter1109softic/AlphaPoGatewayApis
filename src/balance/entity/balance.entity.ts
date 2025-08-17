@@ -19,9 +19,13 @@ export class Balance {
 
   @Column({
     type: 'decimal',
-    precision: 5,
-    scale: 4,
+    precision: 18, 
+    scale: 8,
     default: 0,
+    transformer: {
+      to: (value: number): string => value.toString(),
+      from: (value: string): number => Number(value), 
+    },
   })
   balance: number;
 

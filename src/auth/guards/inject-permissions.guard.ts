@@ -1,14 +1,15 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionCacheService } from 'src/common/services/permission-cache.service';
-import { RoleService } from 'src/role/role.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Roles } from '@/role/entity/role.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class InjectPermissionsGuard implements CanActivate {
   constructor(
     private readonly permissionCache: PermissionCacheService,
-    private readonly roleService: RoleService,
-    private readonly reflector: Reflector,
+    @InjectRepository(Roles) private roleRepository: Repository<Roles>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -24,11 +25,12 @@ export class InjectPermissionsGuard implements CanActivate {
       let permissions = await this.permissionCache.getPermissions(user.userId);
 
       if (!permissions) {
-        const permEntities = await this.roleService.getPermissionsByRole(
-          user.role.roleId,
-        );
-        permissions = permEntities.map((p) => p.slug);
-        await this.permissionCache.setPermissions(user.userId, permissions);
+        let { permissions } = await this.roleRepository.findOne({
+          where: { roleId: user.role.roleId },
+          relations: ['permissions'],
+        });
+        const userPermissions = permissions.map((p) => p.slug);
+        await this.permissionCache.setPermissions(user.userId, userPermissions);
       }
 
       user.permissions = permissions;
