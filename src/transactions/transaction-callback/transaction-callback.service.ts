@@ -8,7 +8,7 @@ import {
 } from './entities/callback-log.entity';
 import { DepositFee } from '../deposit/entities/deposit-fee.entity';
 import { DepositTransaction } from '../deposit/entities/deposit-transaction.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Deposit } from '../deposit/entities/deposit.entity';
 import { DepositStatus } from '../deposit/enums/deposit-status.enum';
 import { Withdrawal } from '../withdraw/entities/withdrawal.entity';
@@ -108,10 +108,15 @@ export class TransactionCallbackService {
 
     // Only process the deposit and update balance if confirmed
     if (body.status === 'confirmed') {
-      const existingTransaction = await this.txRepo.findOne({
-        where: { txid: body.currency_received.txid }, // Query DepositTransaction for txid
+      const txids = body.transactions.map((transaction) => transaction.txid);
+      console.log('Processing deposit for txids:', txids);
+      const existingTransaction = await this.txRepo.find({
+        where: {
+          txid: In(txids),
+        },
       });
-      if (existingTransaction) {
+      console.log('Existing transactions:', existingTransaction);
+      if (existingTransaction.length > 0) {
         console.log('Transaction already exists:', existingTransaction);
       } else {
         const deposit = this.depositRepo.create({
@@ -206,18 +211,30 @@ export class TransactionCallbackService {
 
     // Attach tx & fees
     if (body.transactions?.length) {
-      withdrawal.transactions = body.transactions.map((t) =>
-        this.wTxRepo.create({
-          currency: t.currency,
-          transactionType: t.transaction_type,
-          type: t.type,
-          address: t.address,
-          tag: t.tag,
-          amount: t.amount,
-          txid: t.txid,
-          confirmations: t.confirmations,
-        }),
-      );
+      const txids = body.transactions.map((transaction) => transaction.txid);
+      console.log('Processing deposit for txids:', txids);
+      const existingTransaction = await this.txRepo.find({
+        where: {
+          txid: In(txids),
+        },
+      });
+      console.log('Existing transactions:', existingTransaction);
+      if (existingTransaction.length > 0) {
+        console.log('Transaction already exists:', existingTransaction);
+      } else {
+        withdrawal.transactions = body.transactions.map((t) =>
+          this.wTxRepo.create({
+            currency: t.currency,
+            transactionType: t.transaction_type,
+            type: t.type,
+            address: t.address,
+            tag: t.tag,
+            amount: t.amount,
+            txid: t.txid,
+            confirmations: t.confirmations,
+          }),
+        );
+      }
     }
     if (body.fees?.length) {
       withdrawal.fees = body.fees.map((f) =>

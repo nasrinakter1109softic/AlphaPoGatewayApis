@@ -7,6 +7,7 @@ A production‑ready, Dockerized NestJS + TypeORM (0.3) backend with PostgreSQL.
 ---
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Requirements](#requirements)
 - [Project Structure](#project-structure)
@@ -16,13 +17,14 @@ A production‑ready, Dockerized NestJS + TypeORM (0.3) backend with PostgreSQL.
 - [Migrations](#migrations)
 - [Seeding](#seeding)
 - [NPM Scripts](#npm-scripts)
-- [API Modules](#api-modules)
+- [CI/CD Deployment Notes](#cicd-deployment-notes)
 - [Database Notes](#database-notes)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Overview
+
 This service acts as a gateway server for payment/merchant operations. It provides Role‑Based Access Control (RBAC) using **Roles ↔ Permissions ↔ Menus** and integrates provider‑specific logic (e.g., **Alphapo**). The repository ships with:
 
 - **Dockerized** app + DB + Redis + tooling (pgAdmin, redis-commander)
@@ -30,16 +32,19 @@ This service acts as a gateway server for payment/merchant operations. It provid
 - **Migration helper** (`migrate-and-run`)
 - **Idempotent seeding** for Roles, Menus, Permissions, and Super Admin
 - **Diff‑based mapping** of permissions/menus to roles (safe to re‑run)
+- **Fresh DB-safe migrations** (new servers can build from scratch without errors)
 
 ---
 
 ## Requirements
+
 - **Docker** 24+ & **Docker Compose** v2
 - (Optional) **Node.js 18+** & **npm** for running scripts on host
 
 ---
 
 ## Project Structure
+
 ```
 .
 ├─ docker-compose.yml              # ← compose file used by this repo
@@ -70,6 +75,7 @@ This service acts as a gateway server for payment/merchant operations. It provid
 ---
 
 ## Configuration (.env)
+
 Create a `.env` at project root (copy from `.env.example` if present):
 
 ```
@@ -107,36 +113,59 @@ SA_PHONE=
 SA_RESET_PASSWORD=false
 ```
 
-Ensure `ormconfig.ts` uses **DB_HOST=postgres** (service name inside Docker), not `localhost`.
+> Make sure `ormconfig.ts` uses **DB_HOST=postgres**, not localhost (Docker service name).
 
 ---
 
-## Run with Docker
+## Run with Docker (Fresh Server)
 
-> This repo uses **`docker-compose.yml`** (not the default name), so pass `-f docker-compose.yml`.
+1. **Stop & remove old containers and volumes**
 
-1) **Build & start** services
+```bash
+docker compose -f docker-compose.yml down -v
+```
+
+2. **Build & Start fresh containers**
+
 ```bash
 docker compose -f docker-compose.yml up -d --build
 ```
 
-2) **Sanity check env inside container** (optional)
+3. **Sanity check env inside container** (optional)
+
 ```bash
 docker compose -f docker-compose.yml exec app sh -lc 'echo $DB_HOST; echo $DATABASE_URL'
 # Expect: DB_HOST=postgres
 ```
 
-3) **Run migrations** inside the app container
+4. **Run migrations** inside the app container
+
 ```bash
 docker compose -f docker-compose.yml exec app npm run migrate-and-run init
 ```
 
-4) **Seed the database** (roles, menus, permissions, mappings, super admin)
+5. **Sanity check DB**
+
 ```bash
-docker compose -f docker-compose.yml exec app npm run seed
+docker compose -f docker-compose.yml exec postgres psql -U postgres -c "\l"
 ```
 
-5) **Logs**
+6. **Generate & run fresh migration**
+
+```bash
+docker compose -f docker-compose.yml exec app npm run migrate-and-run init
+docker compose -f docker-compose.yml exec app npm run migrate-and-run
+```
+
+7. **Seed the database** (roles, menus, permissions, mappings, super admin)
+
+```bash
+docker compose -f docker-compose.yml exec app npm run seed
+
+```
+
+8. **Logs**
+
 ```bash
 docker compose -f docker-compose.yml logs -f app
 ```
@@ -148,122 +177,106 @@ App is available at `http://localhost:3000` (adjust if you remap ports).
 ---
 
 ## Run Locally (optional)
+
 ```bash
 npm i
-npm run build   # or ts-node for dev
-# Make sure Postgres is running locally and .env points to it
+npm run build
+# Ensure Postgres running and .env points to it
 npm run migrate-and-run init
 npm run seed
+
 ```
 
 ---
 
 ## Migrations
-Generate & run in one go:
-```bash
-npm run migrate-and-run add-some-change
-```
-If you get **“No changes in database schema were found”**, either:
-- Entities aren’t picked by the DataSource `entities` glob, or
-- You need a manual migration:
-```bash
-npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli migration:create src/migrations/manual-fix
-# edit the file and add SQL up/down
-npm run migrate-and-run manual-fix
-```
 
-Dry‑run (generate only) is available if you added a `migrate:dry` script.
+- Use **npm run migrate-and-run <name>** for any new migration.
 
----
+- Use **hasTable ** / ** hasColumn** checks in alter/drop migrations to avoid fresh DB errors.
+
+- Manual migrations: **npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli migration:create src/migrations/manual-fix**
 
 ## Seeding
 
 ### Standard seed
+
 Seeds Roles, Menus, the project’s Permissions list, maps them to roles/menus, and ensures a **Super Admin** user from env.
+
 ```bash
 npm run seed
 ```
 
 ### Reset + seed (dev only)
+
 Truncates seed‑related tables with CASCADE and re‑seeds.
+
 ```bash
 npm run seed:reset
 ```
 
 ### Extra test data
+
 Enable via env and re-run seed:
+
 ```bash
 SEED_EXTRA_DATA=true npm run seed
 ```
 
 ---
 
-## NPM Scripts
-Common scripts wired for this repo:
-```json
-{
-  "scripts": {
-    "start:dev": "nest start --watch",
-    "migrate-and-run": "ts-node -r tsconfig-paths/register scripts/migrate-and-run.ts",
-    "seed": "ts-node -r tsconfig-paths/register scripts/seeds/seed.ts",
-    "seed:reset": "ts-node -r tsconfig-paths/register scripts/seeds/reset-and-seed.ts",
-    "migrate:dry": "ts-node scripts/migrate-and-run.ts --dry"
-  }
-}
+## CI/CD Deployment Notes
+
+- Pull latest code
+
+- Build Docker image (or pull)
+
+- Start containers:
+
+```bash
+docker compose -f docker-compose.yml up -d --build
 ```
 
----
+- Run migrations inside app container:
 
-## API Modules
-High‑level modules/controllers included in this project (routes vary by implementation):
+```bash
+docker compose -f docker-compose.yml exec app npm run migrate-and-run
+```
 
-- **AuthController** — login/logout, refresh, profile, password ops
-- **CompanyController** — CRUD, status toggle, API key rotate, settlement config
-- **CurrencyController** — CRUD, provider sync
-- **MenuController** — CRUD for app navigation items
-- **PermissionController** — CRUD for RBAC permissions
-- **RoleController** — CRUD and assign permissions to roles
-- **DepositController** — list/view/create manual/approve/reject/export
-- **TransactionCallbackController** — list/view/retry/reprocess callbacks
-- **UploadController** — file upload/list/view/delete
-- **AppController** — health/status/cache utilities
-- **AlphapoController** — provider ops: balance, address, withdraw, sync
+- Optional seed (dev/staging only)
 
-> For exact routes/DTOs, check the corresponding `*.controller.ts` files or Swagger if enabled.
+- Check logs & healthchecks
 
----
+# Tips:
 
-## Database Notes
-- **Uniqueness for upserts**: ensure `roles.roleName`, `permissions.slug`, `menus.path` are `@Column({ unique: true })`.
-- **Many‑to‑many**: keep `@JoinTable()` only on the **owning side** (this project uses **Roles** as owning side for `permissions` and `menus`).
-- **Mapper**: `mapPermissionsToRolesAndMenus.ts` uses **diff‑based** sync to avoid duplicate junction inserts.
-- **Users.phone**: if public signup allows no phone, set `users.phone` to `nullable: true` and run a migration (`ALTER TABLE "users" ALTER COLUMN "phone" DROP NOT NULL;`).
+- `Fresh DB → run **init** migration first`
 
----
+- Existing DB → run pending migrations only
 
-## Troubleshooting
+- Use **hasTable ** / ** hasColumn** in migrations to avoid errors
 
-**ECONNREFUSED 127.0.0.1:5432 inside container**  
-Your app is trying to connect to Postgres at `localhost`. Inside Docker, use the **service name**: set `DB_HOST=postgres` (or `DATABASE_URL=...@postgres:5432/...`) and ensure `ormconfig.ts` reads it.
+Database Notes
 
-**ON CONFLICT needs unique**  
-> `there is no unique or exclusion constraint matching the ON CONFLICT specification`  
-Add unique constraints on natural keys used for upsert (e.g., `slug`, `roleName`, `path`).
+- Unique constraints: **roles.roleName** , **permissions.slug**, **menus.path**
 
-**JoinTable metadata undefined**  
-> `Cannot read properties of undefined (reading 'tableName'|'tablePath')`  
-Ensure `@JoinTable()` exists on one side of each many‑to‑many relation (owning side).
+- Many-to-many relations: only owning side has @JoinTable()
 
-**Duplicate key on junction**  
-> `duplicate key value violates unique constraint ... (role_id, permission_id)`  
-Use the provided **diff‑based** mapper (adds/removes only changes) instead of bulk re‑add.
+- Role-Permission mapping: diff-based, safe to re-run
 
-**Path aliases not resolving**  
-Run scripts with `-r tsconfig-paths/register` or import it in the script file.
+- users.phone nullable if public signup may not provide phone
 
-**Compose volume path mismatch**  
-Make sure Dockerfile `WORKDIR` (default here `/usr/src/app`) matches the compose mount path: `- .:/usr/src/app`.
+Troubleshooting
 
----
+- ECONNREFUSED 127.0.0.1:5432 → Use service name DB_HOST=postgres
+
+- ON CONFLICT needs unique → Add unique constraint
+
+- JoinTable metadata undefined → Check @JoinTable() on owning side
+
+- Duplicate key on junction → Use diff-based mapper
+
+- Compose volume mismatch → Dockerfile WORKDIR must match compose mount
+
+✅ Following this guide ensures fresh server build, migration, and seeding will work without manual tweaks. Safe for CI/CD pipelines.
 
 Happy shipping! 🚀
