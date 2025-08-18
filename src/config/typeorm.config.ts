@@ -11,6 +11,7 @@ export const getTypeOrmConfig = (
     pass: configService.get('DB_PASS'),
     db: configService.get('DB_NAME'),
   });
+
   return {
     type: 'postgres',
     url: configService.get('DATABASE_URL'),
@@ -21,6 +22,7 @@ export const getTypeOrmConfig = (
     database: configService.get('DB_NAME'),
     autoLoadEntities: true,
     synchronize: false,
+    migrationsRun: false, // migrations run manually
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   };
 };

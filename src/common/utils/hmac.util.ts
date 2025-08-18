@@ -8,6 +8,8 @@ export class HmacUtil {
     apiSecret: string,
   ): string {
     const dataString = JSON.stringify(requestBody);
+    console.log('Data String for HMAC:', dataString);
+    console.log('API Secret for HMAC:', apiSecret);
     const signature = crypto
       .createHmac('sha512', apiSecret)
       .update(dataString)

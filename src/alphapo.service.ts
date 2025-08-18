@@ -37,8 +37,14 @@ export class AlphapoService {
           'X-Processing-Signature': signature,
         },
       };
-
-      const url = `${this.apiUrl}${endpoint}`;
+      let url = `${this.apiUrl}${endpoint}`;
+      if (
+        endpoint.startsWith('/api/v2/addresses/take') &&
+        process.env.NODE_ENV === 'development'
+      ) {
+        url = `https://testnet-faucet.com/ltc-testnet${endpoint}`; // Example for testnet, adjust as needed
+      }
+      //const url = `${this.apiUrl}${endpoint}`;
       console.log('Sending Request to:', url);
       const response = await this.httpService
         .post(url, data, config)
