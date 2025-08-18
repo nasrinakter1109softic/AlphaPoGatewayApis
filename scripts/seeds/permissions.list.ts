@@ -18,6 +18,8 @@ export const PERMISSIONS: Perm[] = [
     slug: 'company_approve',
     title: 'Company: Approved Company Status',
   },
+  { slug: 'company_balance_list', title: 'Company: List Balances' },
+
 
   // ========== OtpController ==========
   { slug: 'verify-otp', title: 'Verify OTP: Verify' },

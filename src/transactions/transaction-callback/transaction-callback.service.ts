@@ -163,7 +163,7 @@ export class TransactionCallbackService {
       await this.increaseBalance(
         address.companyId,
         body.currency_received.currency,
-        body.currency_received.amount,
+        +body.currency_received.amount,
       );
     }
   }
@@ -268,7 +268,7 @@ export class TransactionCallbackService {
   private async increaseBalance(
     companyId: number,
     currency: string,
-    amount: string,
+    amount: number,
   ) {
     let balance = await this.balanceRepo.findOne({
       where: { companyId, currency },
@@ -278,7 +278,7 @@ export class TransactionCallbackService {
       balance = this.balanceRepo.create({ companyId, currency, balance: 0 });
     }
 
-    balance.balance = Number(balance.balance) + Number(amount);
+    balance.balance = balance.balance + amount;
     await this.balanceRepo.save(balance);
   }
   private async decreaseBalance(
